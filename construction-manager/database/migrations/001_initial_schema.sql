@@ -7,7 +7,7 @@ CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 
 -- Таблица пользователей (расширяет auth.users)
 CREATE TABLE public.profiles (
-    id UUID REFERENCES auth.users(id) PRIMARY KEY,
+    id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
     email TEXT UNIQUE NOT NULL,
     full_name TEXT,
     avatar_url TEXT,
@@ -34,7 +34,7 @@ CREATE TABLE public.companies (
     director_name TEXT,
     accountant_name TEXT,
     logo_url TEXT,
-    created_by UUID REFERENCES auth.users(id),
+    created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -45,9 +45,9 @@ CREATE TABLE public.projects (
     name TEXT NOT NULL,
     description TEXT,
     address TEXT,
-    client_company_id UUID REFERENCES companies(id),
-    contractor_company_id UUID REFERENCES companies(id),
-    manager_id UUID REFERENCES auth.users(id),
+    client_company_id UUID REFERENCES companies(id) ON DELETE SET NULL,
+    contractor_company_id UUID REFERENCES companies(id) ON DELETE SET NULL,
+    manager_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     status TEXT DEFAULT 'planning' CHECK (status IN ('planning', 'active', 'completed', 'cancelled', 'paused')),
     start_date DATE,
     end_date DATE,
@@ -72,9 +72,10 @@ CREATE TABLE public.project_stages (
     planned_end_date DATE,
     budget DECIMAL(15,2),
     actual_cost DECIMAL(15,2) DEFAULT 0,
-    responsible_id UUID REFERENCES auth.users(id),
+    responsible_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(project_id, order_number)
 );
 
 -- Таблица задач
@@ -86,13 +87,13 @@ CREATE TABLE public.tasks (
     description TEXT,
     status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed', 'cancelled')),
     priority TEXT DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
-    assigned_to UUID REFERENCES auth.users(id),
-    created_by UUID REFERENCES auth.users(id),
+    assigned_to UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     start_date DATE,
     due_date DATE,
     completed_at TIMESTAMPTZ,
-    estimated_hours INTEGER,
-    actual_hours INTEGER DEFAULT 0,
+    estimated_hours INTEGER CHECK (estimated_hours > 0),
+    actual_hours INTEGER DEFAULT 0 CHECK (actual_hours >= 0),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -100,7 +101,7 @@ CREATE TABLE public.tasks (
 -- Таблица сотрудников
 CREATE TABLE public.employees (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    user_id UUID REFERENCES auth.users(id) UNIQUE,
+    user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL UNIQUE,
     employee_number TEXT UNIQUE,
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
@@ -108,8 +109,8 @@ CREATE TABLE public.employees (
     position TEXT NOT NULL,
     department TEXT,
     hire_date DATE,
-    salary DECIMAL(10,2),
-    hourly_rate DECIMAL(8,2),
+    salary DECIMAL(10,2) CHECK (salary >= 0),
+    hourly_rate DECIMAL(8,2) CHECK (hourly_rate >= 0),
     phone TEXT,
     email TEXT,
     passport_series TEXT,
@@ -131,14 +132,15 @@ CREATE TABLE public.time_tracking (
     date DATE NOT NULL,
     start_time TIME,
     end_time TIME,
-    break_minutes INTEGER DEFAULT 0,
-    total_hours DECIMAL(4,2),
-    overtime_hours DECIMAL(4,2) DEFAULT 0,
+    break_minutes INTEGER DEFAULT 0 CHECK (break_minutes >= 0),
+    total_hours DECIMAL(4,2) CHECK (total_hours >= 0 AND total_hours <= 24),
+    overtime_hours DECIMAL(4,2) DEFAULT 0 CHECK (overtime_hours >= 0),
     description TEXT,
-    approved_by UUID REFERENCES auth.users(id),
+    approved_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     approved_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(employee_id, project_id, date)
 );
 
 -- Таблица материалов
@@ -149,9 +151,9 @@ CREATE TABLE public.materials (
     description TEXT,
     unit TEXT NOT NULL, -- м, кг, шт, м2, м3 и т.д.
     category TEXT,
-    price DECIMAL(10,2),
+    price DECIMAL(10,2) CHECK (price >= 0),
     supplier TEXT,
-    min_stock INTEGER DEFAULT 0,
+    min_stock INTEGER DEFAULT 0 CHECK (min_stock >= 0),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -159,16 +161,16 @@ CREATE TABLE public.materials (
 -- Таблица складских операций
 CREATE TABLE public.warehouse_operations (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    material_id UUID REFERENCES materials(id),
-    project_id UUID REFERENCES projects(id),
+    material_id UUID REFERENCES materials(id) ON DELETE RESTRICT,
+    project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
     operation_type TEXT NOT NULL CHECK (operation_type IN ('receipt', 'consumption', 'transfer', 'write_off')),
-    quantity DECIMAL(10,3) NOT NULL,
-    unit_price DECIMAL(10,2),
-    total_price DECIMAL(12,2),
+    quantity DECIMAL(10,3) NOT NULL CHECK (quantity > 0),
+    unit_price DECIMAL(10,2) CHECK (unit_price >= 0),
+    total_price DECIMAL(12,2) CHECK (total_price >= 0),
     document_number TEXT,
     document_date DATE,
     supplier TEXT,
-    responsible_id UUID REFERENCES auth.users(id),
+    responsible_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     notes TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -176,10 +178,10 @@ CREATE TABLE public.warehouse_operations (
 -- Таблица остатков материалов
 CREATE TABLE public.material_stock (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    material_id UUID REFERENCES materials(id),
-    project_id UUID REFERENCES projects(id),
-    current_stock DECIMAL(10,3) DEFAULT 0,
-    reserved_stock DECIMAL(10,3) DEFAULT 0,
+    material_id UUID REFERENCES materials(id) ON DELETE CASCADE,
+    project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+    current_stock DECIMAL(10,3) DEFAULT 0 CHECK (current_stock >= 0),
+    reserved_stock DECIMAL(10,3) DEFAULT 0 CHECK (reserved_stock >= 0),
     last_updated TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(material_id, project_id)
 );
@@ -187,11 +189,11 @@ CREATE TABLE public.material_stock (
 -- Таблица финансовых операций
 CREATE TABLE public.financial_operations (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    project_id UUID REFERENCES projects(id),
+    project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
     operation_type TEXT NOT NULL CHECK (operation_type IN ('income', 'expense')),
     category TEXT NOT NULL,
     subcategory TEXT,
-    amount DECIMAL(15,2) NOT NULL,
+    amount DECIMAL(15,2) NOT NULL CHECK (amount > 0),
     currency TEXT DEFAULT 'RUB',
     description TEXT,
     document_number TEXT,
@@ -199,8 +201,8 @@ CREATE TABLE public.financial_operations (
     counterparty TEXT,
     payment_method TEXT,
     account TEXT,
-    responsible_id UUID REFERENCES auth.users(id),
-    approved_by UUID REFERENCES auth.users(id),
+    responsible_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    approved_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     approved_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -212,19 +214,20 @@ CREATE TABLE public.estimates (
     project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     number TEXT,
-    version INTEGER DEFAULT 1,
+    version INTEGER DEFAULT 1 CHECK (version > 0),
     status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'approved', 'active', 'archived')),
-    total_amount DECIMAL(15,2),
-    labor_cost DECIMAL(15,2),
-    material_cost DECIMAL(15,2),
-    equipment_cost DECIMAL(15,2),
-    overhead_percent DECIMAL(5,2) DEFAULT 0,
-    profit_percent DECIMAL(5,2) DEFAULT 0,
-    created_by UUID REFERENCES auth.users(id),
-    approved_by UUID REFERENCES auth.users(id),
+    total_amount DECIMAL(15,2) CHECK (total_amount >= 0),
+    labor_cost DECIMAL(15,2) CHECK (labor_cost >= 0),
+    material_cost DECIMAL(15,2) CHECK (material_cost >= 0),
+    equipment_cost DECIMAL(15,2) CHECK (equipment_cost >= 0),
+    overhead_percent DECIMAL(5,2) DEFAULT 0 CHECK (overhead_percent >= 0 AND overhead_percent <= 100),
+    profit_percent DECIMAL(5,2) DEFAULT 0 CHECK (profit_percent >= 0 AND profit_percent <= 100),
+    created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    approved_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     approved_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(project_id, number, version)
 );
 
 -- Таблица позиций смет
@@ -235,15 +238,16 @@ CREATE TABLE public.estimate_items (
     code TEXT,
     name TEXT NOT NULL,
     unit TEXT NOT NULL,
-    quantity DECIMAL(10,3) NOT NULL,
-    unit_price DECIMAL(10,2) NOT NULL,
-    total_price DECIMAL(12,2) NOT NULL,
-    labor_cost DECIMAL(10,2),
-    material_cost DECIMAL(10,2),
-    equipment_cost DECIMAL(10,2),
+    quantity DECIMAL(10,3) NOT NULL CHECK (quantity > 0),
+    unit_price DECIMAL(10,2) NOT NULL CHECK (unit_price >= 0),
+    total_price DECIMAL(12,2) NOT NULL CHECK (total_price >= 0),
+    labor_cost DECIMAL(10,2) CHECK (labor_cost >= 0),
+    material_cost DECIMAL(10,2) CHECK (material_cost >= 0),
+    equipment_cost DECIMAL(10,2) CHECK (equipment_cost >= 0),
     category TEXT,
     notes TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(estimate_id, order_number)
 );
 
 -- Таблица справок КС
@@ -255,9 +259,9 @@ CREATE TABLE public.ks_reports (
     date DATE NOT NULL,
     period_start DATE,
     period_end DATE,
-    total_amount DECIMAL(15,2),
-    previous_amount DECIMAL(15,2) DEFAULT 0,
-    current_amount DECIMAL(15,2),
+    total_amount DECIMAL(15,2) CHECK (total_amount >= 0),
+    previous_amount DECIMAL(15,2) DEFAULT 0 CHECK (previous_amount >= 0),
+    current_amount DECIMAL(15,2) CHECK (current_amount >= 0),
     contractor_name TEXT,
     contractor_inn TEXT,
     customer_name TEXT,
@@ -265,29 +269,31 @@ CREATE TABLE public.ks_reports (
     contract_number TEXT,
     contract_date DATE,
     status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'approved', 'sent')),
-    created_by UUID REFERENCES auth.users(id),
-    approved_by UUID REFERENCES auth.users(id),
+    created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    approved_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     approved_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(project_id, type, number)
 );
 
 -- Таблица позиций КС
 CREATE TABLE public.ks_items (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     ks_report_id UUID REFERENCES ks_reports(id) ON DELETE CASCADE,
-    estimate_item_id UUID REFERENCES estimate_items(id),
+    estimate_item_id UUID REFERENCES estimate_items(id) ON DELETE SET NULL,
     order_number INTEGER,
     name TEXT NOT NULL,
     unit TEXT NOT NULL,
-    total_quantity DECIMAL(10,3),
-    previous_quantity DECIMAL(10,3) DEFAULT 0,
-    current_quantity DECIMAL(10,3),
-    unit_price DECIMAL(10,2),
-    total_amount DECIMAL(12,2),
-    previous_amount DECIMAL(12,2) DEFAULT 0,
-    current_amount DECIMAL(12,2),
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    total_quantity DECIMAL(10,3) CHECK (total_quantity >= 0),
+    previous_quantity DECIMAL(10,3) DEFAULT 0 CHECK (previous_quantity >= 0),
+    current_quantity DECIMAL(10,3) CHECK (current_quantity >= 0),
+    unit_price DECIMAL(10,2) CHECK (unit_price >= 0),
+    total_amount DECIMAL(12,2) CHECK (total_amount >= 0),
+    previous_amount DECIMAL(12,2) DEFAULT 0 CHECK (previous_amount >= 0),
+    current_amount DECIMAL(12,2) CHECK (current_amount >= 0),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(ks_report_id, order_number)
 );
 
 -- Таблица дефектовок
@@ -299,8 +305,8 @@ CREATE TABLE public.defects (
     location TEXT,
     severity TEXT DEFAULT 'medium' CHECK (severity IN ('low', 'medium', 'high', 'critical')),
     status TEXT DEFAULT 'open' CHECK (status IN ('open', 'in_progress', 'resolved', 'closed')),
-    found_by UUID REFERENCES auth.users(id),
-    assigned_to UUID REFERENCES auth.users(id),
+    found_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    assigned_to UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     due_date DATE,
     resolved_at TIMESTAMPTZ,
     resolution_notes TEXT,
@@ -315,11 +321,11 @@ CREATE TABLE public.attachments (
     name TEXT NOT NULL,
     original_name TEXT NOT NULL,
     file_path TEXT NOT NULL,
-    file_size BIGINT,
+    file_size BIGINT CHECK (file_size > 0),
     mime_type TEXT,
     entity_type TEXT NOT NULL, -- project, task, estimate, ks_report, defect, etc.
     entity_id UUID NOT NULL,
-    uploaded_by UUID REFERENCES auth.users(id),
+    uploaded_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     ocr_text TEXT, -- Результат OCR
     search_vector TSVECTOR, -- Для полнотекстового поиска
     created_at TIMESTAMPTZ DEFAULT NOW()
@@ -338,21 +344,32 @@ CREATE TABLE public.company_settings (
 
 -- Создание индексов для производительности
 CREATE INDEX idx_profiles_email ON profiles(email);
+CREATE INDEX idx_profiles_role ON profiles(role);
 CREATE INDEX idx_projects_status ON projects(status);
 CREATE INDEX idx_projects_manager ON projects(manager_id);
+CREATE INDEX idx_projects_dates ON projects(start_date, end_date);
 CREATE INDEX idx_tasks_project ON tasks(project_id);
 CREATE INDEX idx_tasks_assigned ON tasks(assigned_to);
 CREATE INDEX idx_tasks_status ON tasks(status);
+CREATE INDEX idx_tasks_priority ON tasks(priority);
+CREATE INDEX idx_tasks_due_date ON tasks(due_date);
 CREATE INDEX idx_time_tracking_employee ON time_tracking(employee_id);
 CREATE INDEX idx_time_tracking_project ON time_tracking(project_id);
 CREATE INDEX idx_time_tracking_date ON time_tracking(date);
 CREATE INDEX idx_warehouse_operations_material ON warehouse_operations(material_id);
 CREATE INDEX idx_warehouse_operations_project ON warehouse_operations(project_id);
+CREATE INDEX idx_warehouse_operations_date ON warehouse_operations(document_date);
 CREATE INDEX idx_financial_operations_project ON financial_operations(project_id);
+CREATE INDEX idx_financial_operations_type ON financial_operations(operation_type);
+CREATE INDEX idx_financial_operations_date ON financial_operations(document_date);
 CREATE INDEX idx_estimates_project ON estimates(project_id);
+CREATE INDEX idx_estimates_status ON estimates(status);
 CREATE INDEX idx_ks_reports_project ON ks_reports(project_id);
+CREATE INDEX idx_ks_reports_type ON ks_reports(type);
+CREATE INDEX idx_ks_reports_date ON ks_reports(date);
 CREATE INDEX idx_defects_project ON defects(project_id);
 CREATE INDEX idx_defects_assigned ON defects(assigned_to);
+CREATE INDEX idx_defects_status ON defects(status);
 CREATE INDEX idx_attachments_entity ON attachments(entity_type, entity_id);
 CREATE INDEX idx_attachments_search ON attachments USING GIN(search_vector);
 
@@ -389,3 +406,61 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER attachments_search_vector BEFORE INSERT OR UPDATE ON attachments FOR EACH ROW EXECUTE FUNCTION update_attachment_search_vector();
+
+-- Триггер для автоматического расчета total_hours в time_tracking
+CREATE OR REPLACE FUNCTION calculate_total_hours()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.start_time IS NOT NULL AND NEW.end_time IS NOT NULL THEN
+        NEW.total_hours = EXTRACT(EPOCH FROM (NEW.end_time - NEW.start_time)) / 3600.0 - (COALESCE(NEW.break_minutes, 0) / 60.0);
+        IF NEW.total_hours > 8 THEN
+            NEW.overtime_hours = NEW.total_hours - 8;
+        ELSE
+            NEW.overtime_hours = 0;
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER calculate_time_tracking_hours BEFORE INSERT OR UPDATE ON time_tracking FOR EACH ROW EXECUTE FUNCTION calculate_total_hours();
+
+-- Триггер для автоматического расчета стоимости в estimate_items
+CREATE OR REPLACE FUNCTION calculate_estimate_item_total()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.total_price = NEW.quantity * NEW.unit_price;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER calculate_estimate_item_total_trigger BEFORE INSERT OR UPDATE ON estimate_items FOR EACH ROW EXECUTE FUNCTION calculate_estimate_item_total();
+
+-- Триггер для обновления остатков материалов
+CREATE OR REPLACE FUNCTION update_material_stock()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- При операции поступления увеличиваем остаток
+    IF NEW.operation_type = 'receipt' THEN
+        INSERT INTO material_stock (material_id, project_id, current_stock, last_updated)
+        VALUES (NEW.material_id, NEW.project_id, NEW.quantity, NOW())
+        ON CONFLICT (material_id, project_id)
+        DO UPDATE SET 
+            current_stock = material_stock.current_stock + NEW.quantity,
+            last_updated = NOW();
+    
+    -- При операции расхода уменьшаем остаток
+    ELSIF NEW.operation_type = 'consumption' THEN
+        INSERT INTO material_stock (material_id, project_id, current_stock, last_updated)
+        VALUES (NEW.material_id, NEW.project_id, -NEW.quantity, NOW())
+        ON CONFLICT (material_id, project_id)
+        DO UPDATE SET 
+            current_stock = GREATEST(0, material_stock.current_stock - NEW.quantity),
+            last_updated = NOW();
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_material_stock_trigger AFTER INSERT ON warehouse_operations FOR EACH ROW EXECUTE FUNCTION update_material_stock();
