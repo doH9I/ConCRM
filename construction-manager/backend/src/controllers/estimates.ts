@@ -3,7 +3,7 @@ import { dbService, supabase } from '../utils/supabase';
 import { AuthenticatedRequest, Estimate, EstimateItem, ApiResponse, PaginatedResponse } from '../types';
 import { asyncHandler, AppError } from '../middleware/errorHandler';
 import { logInfo } from '../middleware/logger';
-import * as XLSX from 'xlsx';
+import * as ExcelJS from 'exceljs';
 
 // Получить все сметы
 export const getEstimates = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
@@ -148,11 +148,11 @@ export const deleteEstimate = asyncHandler(async (req: AuthenticatedRequest, res
 
 // Утвердить смету
 export const approveEstimate = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+  const { id } = req.params;
+
   if (!req.user) {
     throw new AppError('User not authenticated', 401);
   }
-
-  const { id } = req.params;
 
   const estimate = await dbService.update<Estimate>('estimates', id, {
     status: 'approved',
@@ -160,11 +160,10 @@ export const approveEstimate = asyncHandler(async (req: AuthenticatedRequest, re
     approved_at: new Date().toISOString()
   });
 
-  logInfo('Estimate approved', { estimateId: id, approvedBy: req.user.id });
+  logInfo('Estimate approved', { estimateId: id, userId: req.user.id });
 
   res.json({
     success: true,
-    message: 'Estimate approved successfully',
     data: estimate
   } as ApiResponse<Estimate>);
 });
@@ -309,34 +308,35 @@ export const importEstimateFromExcel = asyncHandler(async (req: AuthenticatedReq
 
   try {
     // Читаем Excel файл
-    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(req.file.buffer);
+    const worksheet = workbook.getWorksheet(1);
+    
     const items: any[] = [];
     
     // Предполагаем, что первая строка - заголовки
     // Формат: Номер, Наименование, Единица, Количество, Цена, Категория
-    for (let i = 1; i < data.length; i++) {
-      const row = data[i] as any[];
-      if (row.length >= 5 && row[1] && row[2] && row[3] && row[4]) {
-        items.push({
-          estimate_id,
-          order_number: row[0] || i,
-          name: row[1],
-          unit: row[2],
-          quantity: Number(row[3]) || 0,
-          unit_price: Number(row[4]) || 0,
-          total_price: (Number(row[3]) || 0) * (Number(row[4]) || 0),
-          category: row[5] || 'Общие работы',
-          labor_cost: Number(row[6]) || 0,
-          material_cost: Number(row[7]) || 0,
-          equipment_cost: Number(row[8]) || 0,
-          notes: row[9] || ''
-        });
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber > 1) { // Пропускаем заголовки
+        const values = row.values as any[];
+        if (values.length >= 6 && values[2] && values[3] && values[4] && values[5]) {
+          items.push({
+            estimate_id,
+            order_number: values[1] || rowNumber - 1,
+            name: values[2],
+            unit: values[3],
+            quantity: Number(values[4]) || 0,
+            unit_price: Number(values[5]) || 0,
+            total_price: (Number(values[4]) || 0) * (Number(values[5]) || 0),
+            category: values[6] || 'Общие работы',
+            labor_cost: Number(values[7]) || 0,
+            material_cost: Number(values[8]) || 0,
+            equipment_cost: Number(values[9]) || 0,
+            notes: values[10] || ''
+          });
+        }
       }
-    }
+    });
 
     if (items.length === 0) {
       throw new AppError('No valid items found in Excel file', 400);
@@ -401,7 +401,8 @@ export const exportEstimateToExcel = asyncHandler(async (req: AuthenticatedReque
   }
 
   // Создаем Excel файл
-  const workbook = XLSX.utils.book_new();
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Смета');
   
   // Заголовки для позиций
   const headers = [
@@ -410,10 +411,12 @@ export const exportEstimateToExcel = asyncHandler(async (req: AuthenticatedReque
     'Стоимость материалов', 'Стоимость оборудования', 'Примечания'
   ];
 
-  // Данные позиций
-  const itemsData = [
-    headers,
-    ...estimate.estimate_items.map((item: any) => [
+  // Добавляем заголовки
+  worksheet.addRow(headers);
+
+  // Добавляем данные позиций
+  estimate.estimate_items.forEach((item: any) => {
+    worksheet.addRow([
       item.order_number,
       item.name,
       item.unit,
@@ -424,11 +427,11 @@ export const exportEstimateToExcel = asyncHandler(async (req: AuthenticatedReque
       item.material_cost || 0,
       item.equipment_cost || 0,
       item.notes || ''
-    ])
-  ];
+    ]);
+  });
 
   // Добавляем итоговую строку
-  const totalRow = [
+  worksheet.addRow([
     '',
     'ИТОГО:',
     '',
@@ -439,14 +442,10 @@ export const exportEstimateToExcel = asyncHandler(async (req: AuthenticatedReque
     estimate.material_cost || 0,
     estimate.equipment_cost || 0,
     ''
-  ];
-  itemsData.push(totalRow);
-
-  const worksheet = XLSX.utils.aoa_to_sheet(itemsData);
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Смета');
+  ]);
 
   // Создаем буфер
-  const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+  const buffer = await workbook.xlsx.writeBuffer();
 
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   res.setHeader('Content-Disposition', `attachment; filename=estimate_${estimate.number || id}.xlsx`);
@@ -519,6 +518,84 @@ export const copyEstimate = asyncHandler(async (req: AuthenticatedRequest, res: 
     success: true,
     message: 'Estimate copied successfully',
     data: newEstimate
+  } as ApiResponse<Estimate>);
+});
+
+// Дублировать смету
+export const duplicateEstimate = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+  const { id } = req.params;
+
+  if (!req.user) {
+    throw new AppError('User not authenticated', 401);
+  }
+
+  // Получаем оригинальную смету с позициями
+  const { data: originalEstimate, error } = await supabase
+    .from('estimates')
+    .select(`
+      *,
+      estimate_items(*)
+    `)
+    .eq('id', id)
+    .single();
+
+  if (error || !originalEstimate) {
+    throw new AppError('Estimate not found', 404);
+  }
+
+  // Создаем копию сметы
+  const { estimate_items, ...estimateData } = originalEstimate;
+  const duplicateData = {
+    ...estimateData,
+    id: undefined,
+    name: `${originalEstimate.name} (Копия)`,
+    number: `${originalEstimate.number}-COPY`,
+    status: 'draft',
+    version: 1,
+    created_by: req.user.id,
+    approved_by: null,
+    approved_at: null,
+    created_at: undefined,
+    updated_at: undefined
+  };
+
+  const newEstimate = await dbService.create<Estimate>('estimates', duplicateData);
+
+  // Копируем позиции
+  if (estimate_items && estimate_items.length > 0) {
+    for (const item of estimate_items) {
+      const { id: itemId, created_at, ...itemData } = item;
+      await dbService.create('estimate_items', {
+        ...itemData,
+        estimate_id: newEstimate.id
+      });
+    }
+  }
+
+  // Пересчитываем итоги
+  await recalculateEstimateTotal(newEstimate.id);
+
+  logInfo('Estimate duplicated', { originalId: id, newId: newEstimate.id, userId: req.user.id });
+
+  res.status(201).json({
+    success: true,
+    data: newEstimate
+  } as ApiResponse<Estimate>);
+});
+
+// Пересчитать итоги сметы
+export const calculateEstimateTotals = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+  const { id } = req.params;
+
+  await recalculateEstimateTotal(id);
+
+  const updatedEstimate = await dbService.getById<Estimate>('estimates', id);
+
+  logInfo('Estimate totals calculated', { estimateId: id, userId: req.user?.id });
+
+  res.json({
+    success: true,
+    data: updatedEstimate
   } as ApiResponse<Estimate>);
 });
 

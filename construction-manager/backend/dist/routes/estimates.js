@@ -1,0 +1,21 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const auth_1 = require("../middleware/auth");
+const estimates_1 = require("../controllers/estimates");
+const router = (0, express_1.Router)();
+router.use(auth_1.authenticate);
+router.get('/', estimates_1.getEstimates);
+router.get('/:id', estimates_1.getEstimate);
+router.post('/', estimates_1.createEstimate);
+router.put('/:id', estimates_1.updateEstimate);
+router.delete('/:id', estimates_1.deleteEstimate);
+router.post('/:id/items', estimates_1.addEstimateItem);
+router.put('/:id/items/:itemId', estimates_1.updateEstimateItem);
+router.delete('/:id/items/:itemId', estimates_1.deleteEstimateItem);
+router.post('/:id/duplicate', estimates_1.duplicateEstimate);
+router.post('/:id/calculate', estimates_1.calculateEstimateTotals);
+router.post('/:id/approve', estimates_1.approveEstimate);
+router.get('/:id/export/excel', estimates_1.exportEstimateToExcel);
+exports.default = router;
+//# sourceMappingURL=estimates.js.map
