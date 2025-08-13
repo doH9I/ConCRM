@@ -1,372 +1,302 @@
-// Базовые типы
+// Base types
 export interface BaseEntity {
   id: string;
   created_at: string;
   updated_at: string;
 }
 
-// Пользователь
-export interface User {
-  id: string;
+// User and Auth types
+export interface User extends BaseEntity {
   email: string;
-  full_name?: string;
+  full_name: string;
+  role: 'admin' | 'manager' | 'employee';
   avatar_url?: string;
   phone?: string;
   position?: string;
-  company?: string;
-  role: 'admin' | 'manager' | 'user' | 'employee';
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
 }
 
-// Сессия
-export interface Session {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-  token_type: string;
-  user: User;
-}
-
-// Компания
-export interface Company extends BaseEntity {
-  name: string;
-  inn?: string;
-  kpp?: string;
-  ogrn?: string;
-  legal_address?: string;
-  actual_address?: string;
-  phone?: string;
-  email?: string;
-  director_name?: string;
-  accountant_name?: string;
-  logo_url?: string;
-  created_by: string;
-}
-
-// Проект
+// Project types
 export interface Project extends BaseEntity {
   name: string;
   description?: string;
-  address?: string;
-  client_company_id?: string;
-  contractor_company_id?: string;
-  manager_id?: string;
-  status: 'planning' | 'active' | 'completed' | 'cancelled' | 'paused';
-  start_date?: string;
+  status: 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled';
+  start_date: string;
   end_date?: string;
-  planned_end_date?: string;
-  budget?: number;
-  actual_cost: number;
-  progress_percent: number;
+  budget: number;
+  client_name: string;
+  client_contact?: string;
+  manager_id: string;
+  address?: string;
+  progress: number;
 }
 
-// Этап проекта
 export interface ProjectStage extends BaseEntity {
   project_id: string;
   name: string;
   description?: string;
-  order_number: number;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
-  start_date?: string;
+  start_date: string;
   end_date?: string;
-  planned_end_date?: string;
-  budget?: number;
-  actual_cost: number;
+  status: 'pending' | 'in_progress' | 'completed';
   responsible_id?: string;
+  budget: number;
+  order_index: number;
 }
 
-// Задача
+// Task types
 export interface Task extends BaseEntity {
   project_id: string;
   stage_id?: string;
   title: string;
   description?: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'todo' | 'in_progress' | 'review' | 'completed';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   assigned_to?: string;
-  created_by?: string;
-  start_date?: string;
   due_date?: string;
-  completed_at?: string;
   estimated_hours?: number;
-  actual_hours: number;
+  actual_hours?: number;
 }
 
-// Сотрудник
+// Employee types
 export interface Employee extends BaseEntity {
   user_id?: string;
-  employee_number?: string;
-  first_name: string;
-  last_name: string;
-  middle_name?: string;
+  full_name: string;
   position: string;
   department?: string;
-  hire_date?: string;
-  salary?: number;
-  hourly_rate?: number;
+  hire_date: string;
+  salary: number;
   phone?: string;
   email?: string;
-  passport_series?: string;
-  passport_number?: string;
-  passport_issued_by?: string;
-  passport_issued_date?: string;
-  address?: string;
-  is_active: boolean;
+  status: 'active' | 'inactive' | 'on_leave';
+  skills?: string[];
 }
 
-// Материал
+export interface TimeEntry extends BaseEntity {
+  employee_id: string;
+  project_id?: string;
+  task_id?: string;
+  date: string;
+  hours: number;
+  description?: string;
+  is_overtime: boolean;
+}
+
+// Financial types
+export interface FinancialOperation extends BaseEntity {
+  type: 'income' | 'expense';
+  category: string;
+  amount: number;
+  description?: string;
+  date: string;
+  project_id?: string;
+  employee_id?: string;
+  is_recurring: boolean;
+  recurring_period?: 'daily' | 'weekly' | 'monthly' | 'yearly';
+}
+
+export interface Budget extends BaseEntity {
+  project_id?: string;
+  category: string;
+  planned_amount: number;
+  actual_amount: number;
+  period_start: string;
+  period_end: string;
+}
+
+// Material types
 export interface Material extends BaseEntity {
   name: string;
-  code?: string;
   description?: string;
   unit: string;
-  category?: string;
-  price?: number;
-  supplier?: string;
-  min_stock: number;
-}
-
-// Финансовая операция
-export interface FinancialOperation extends BaseEntity {
-  project_id: string;
-  operation_type: 'income' | 'expense';
   category: string;
-  subcategory?: string;
-  amount: number;
-  currency: string;
+  current_stock: number;
+  min_stock: number;
+  max_stock: number;
+  unit_price: number;
+  supplier?: string;
+}
+
+export interface MaterialOperation extends BaseEntity {
+  material_id: string;
+  type: 'receipt' | 'consumption' | 'transfer' | 'inventory';
+  quantity: number;
+  unit_price?: number;
+  project_id?: string;
   description?: string;
+  date: string;
   document_number?: string;
-  document_date?: string;
-  counterparty?: string;
-  payment_method?: string;
-  account?: string;
-  responsible_id?: string;
-  approved_by?: string;
-  approved_at?: string;
 }
 
-// Смета
+// Estimate types
 export interface Estimate extends BaseEntity {
-  project_id: string;
+  project_id?: string;
   name: string;
-  number?: string;
   version: number;
-  status: 'draft' | 'approved' | 'active' | 'archived';
-  total_amount?: number;
-  labor_cost?: number;
-  material_cost?: number;
-  equipment_cost?: number;
-  overhead_percent: number;
-  profit_percent: number;
-  created_by?: string;
+  status: 'draft' | 'active' | 'approved' | 'archived';
+  total_cost: number;
+  labor_cost: number;
+  material_cost: number;
+  equipment_cost: number;
+  overhead_cost: number;
+  profit_margin: number;
+  created_by: string;
   approved_by?: string;
-  approved_at?: string;
+  approved_date?: string;
 }
 
-// Позиция сметы
-export interface EstimateItem {
-  id: string;
+export interface EstimateItem extends BaseEntity {
   estimate_id: string;
-  order_number?: number;
-  code?: string;
+  category: string;
   name: string;
+  description?: string;
   unit: string;
   quantity: number;
   unit_price: number;
   total_price: number;
-  labor_cost?: number;
+  labor_hours?: number;
   material_cost?: number;
   equipment_cost?: number;
-  category?: string;
-  notes?: string;
-  created_at: string;
+  order_index: number;
 }
 
-// Справка КС
-export interface KsReport extends BaseEntity {
-  project_id: string;
-  type: 'ks2' | 'ks3' | 'ks6a';
-  number: string;
-  date: string;
-  period_start?: string;
-  period_end?: string;
-  total_amount?: number;
-  previous_amount: number;
-  current_amount?: number;
-  contractor_name?: string;
-  contractor_inn?: string;
-  customer_name?: string;
-  customer_inn?: string;
-  contract_number?: string;
-  contract_date?: string;
-  status: 'draft' | 'approved' | 'sent';
-  created_by?: string;
-  approved_by?: string;
-  approved_at?: string;
-}
-
-// Дефектовка
+// Defect types
 export interface Defect extends BaseEntity {
   project_id: string;
   title: string;
   description: string;
   location?: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
-  status: 'open' | 'in_progress' | 'resolved' | 'closed';
-  found_by?: string;
+  status: 'reported' | 'assigned' | 'in_progress' | 'resolved' | 'verified';
+  reported_by: string;
   assigned_to?: string;
   due_date?: string;
-  resolved_at?: string;
-  resolution_notes?: string;
-  photo_urls?: string[];
+  resolution?: string;
+  resolved_date?: string;
+  verified_by?: string;
+  verified_date?: string;
 }
 
-// API Response типы
-export interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
+// Document types
+export interface Document extends BaseEntity {
+  name: string;
+  type: 'pdf' | 'image' | 'excel' | 'word' | 'other';
+  size: number;
+  url: string;
+  project_id?: string;
+  uploaded_by: string;
+  description?: string;
+  tags?: string[];
+  is_public: boolean;
+  ocr_text?: string;
+}
+
+// Comment types
+export interface Comment extends BaseEntity {
+  entity_type: 'project' | 'task' | 'defect' | 'document';
+  entity_id: string;
+  content: string;
+  author_id: string;
+  parent_id?: string;
+}
+
+// Attachment types
+export interface Attachment extends BaseEntity {
+  entity_type: 'project' | 'task' | 'defect' | 'estimate';
+  entity_id: string;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  url: string;
+  uploaded_by: string;
+}
+
+// Notification types
+export interface Notification extends BaseEntity {
+  user_id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'warning' | 'error' | 'success';
+  is_read: boolean;
+  action_url?: string;
+}
+
+// API Response types
+export interface ApiResponse<T> {
+  data: T;
   message?: string;
-  error?: string;
-}
-
-export interface PaginatedResponse<T> extends ApiResponse<T[]> {
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
+  meta?: {
+    page?: number;
+    limit?: number;
+    total?: number;
+    totalPages?: number;
   };
 }
 
-// Формы
-export interface LoginForm {
-  email: string;
-  password: string;
+export interface ApiError {
+  message: string;
+  errors?: Record<string, string[]>;
+  status?: number;
 }
 
-export interface RegisterForm {
-  email: string;
-  password: string;
-  full_name?: string;
-  phone?: string;
-  position?: string;
-  company?: string;
-}
-
-export interface ProjectForm {
+// Form types
+export interface CreateProjectForm {
   name: string;
   description?: string;
-  address?: string;
-  client_company_id?: string;
-  contractor_company_id?: string;
-  status?: 'planning' | 'active' | 'completed' | 'cancelled' | 'paused';
-  start_date?: string;
+  client_name: string;
+  client_contact?: string;
+  start_date: string;
   end_date?: string;
-  planned_end_date?: string;
-  budget?: number;
+  budget: number;
+  manager_id: string;
+  address?: string;
 }
 
-export interface TaskForm {
+export interface CreateTaskForm {
   project_id: string;
   stage_id?: string;
   title: string;
   description?: string;
-  status?: 'pending' | 'in_progress' | 'completed' | 'cancelled';
-  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
   assigned_to?: string;
-  start_date?: string;
   due_date?: string;
   estimated_hours?: number;
 }
 
-// Фильтры
+export interface CreateEmployeeForm {
+  full_name: string;
+  position: string;
+  department?: string;
+  hire_date: string;
+  salary: number;
+  phone?: string;
+  email?: string;
+}
+
+// Filter and Search types
 export interface ProjectFilters {
-  page?: number;
-  limit?: number;
-  status?: string;
+  status?: string[];
   manager_id?: string;
-  client_company_id?: string;
-  search?: string;
-  sort?: string;
-  order?: 'asc' | 'desc';
+  client_name?: string;
+  date_range?: {
+    start: string;
+    end: string;
+  };
 }
 
 export interface TaskFilters {
+  project_id?: string;
+  status?: string[];
+  priority?: string[];
+  assigned_to?: string;
+  due_date_range?: {
+    start: string;
+    end: string;
+  };
+}
+
+export interface SearchParams {
+  query?: string;
   page?: number;
   limit?: number;
-  project_id?: string;
-  stage_id?: string;
-  status?: string;
-  priority?: string;
-  assigned_to?: string;
-  due_date_from?: string;
-  due_date_to?: string;
-  sort?: string;
-  order?: 'asc' | 'desc';
-}
-
-// Статистика
-export interface DashboardStats {
-  projects: {
-    total: number;
-    active: number;
-    completed: number;
-    overdue: number;
-  };
-  tasks: {
-    total: number;
-    completed: number;
-    overdue: number;
-    my_tasks: number;
-  };
-  finance: {
-    total_budget: number;
-    total_spent: number;
-    monthly_income: number[];
-    monthly_expenses: number[];
-  };
-}
-
-// Навигация
-export interface MenuItem {
-  id: string;
-  title: string;
-  path: string;
-  icon: React.ComponentType;
-  children?: MenuItem[];
-  roles?: string[];
-}
-
-// Уведомления
-export interface Notification {
-  id: string;
-  type: 'success' | 'error' | 'warning' | 'info';
-  title: string;
-  message: string;
-  timestamp: string;
-  read: boolean;
-}
-
-// Настройки темы
-export interface ThemeSettings {
-  mode: 'light' | 'dark';
-  primaryColor: string;
-  secondaryColor: string;
-  fontSize: 'small' | 'medium' | 'large';
-}
-
-// Настройки пользователя
-export interface UserSettings {
-  theme: ThemeSettings;
-  language: string;
-  timezone: string;
-  notifications: {
-    email: boolean;
-    push: boolean;
-    tasks: boolean;
-    projects: boolean;
-    finance: boolean;
-  };
+  sort_by?: string;
+  sort_order?: 'asc' | 'desc';
 }
