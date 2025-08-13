@@ -42,7 +42,7 @@ const Login: React.FC = () => {
     try {
       const { error } = await signIn(email, password);
       if (error) {
-        setError(error.message);
+        setError((error as any).message || 'Ошибка входа');
       }
     } catch (err) {
       setError('Произошла ошибка при входе в систему');

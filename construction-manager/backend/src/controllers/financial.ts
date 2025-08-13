@@ -182,14 +182,14 @@ export const getFinancialStats = asyncHandler(async (req: AuthenticatedRequest, 
       if (!stats.categories[op.category]) {
         stats.categories[op.category] = { income: 0, expense: 0 };
       }
-      stats.categories[op.category][op.operation_type] += amount;
+      (stats.categories[op.category] as any)[op.operation_type] += amount;
 
       // Статистика по месяцам
       const month = op.document_date?.substring(0, 7) || new Date().toISOString().substring(0, 7);
       if (!stats.monthly_data[month]) {
         stats.monthly_data[month] = { income: 0, expense: 0 };
       }
-      stats.monthly_data[month][op.operation_type] += amount;
+      (stats.monthly_data[month] as any)[op.operation_type] += amount;
     });
 
     stats.net_profit = stats.total_income - stats.total_expenses;
@@ -284,7 +284,7 @@ export const getProjectBudget = asyncHandler(async (req: AuthenticatedRequest, r
   }
 
   // Получаем данные проекта
-  const project = await dbService.getById('projects', project_id);
+  const project = await dbService.getById<any>('projects', project_id);
   if (!project) {
     throw new AppError('Project not found', 404);
   }

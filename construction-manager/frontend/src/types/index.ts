@@ -130,9 +130,13 @@ export interface MaterialOperation extends BaseEntity {
 export interface Estimate extends BaseEntity {
   project_id?: string;
   name: string;
+  description?: string;
   version: number;
-  status: 'draft' | 'active' | 'approved' | 'archived';
+  status: 'draft' | 'active' | 'approved' | 'archived' | 'in_review';
   total_cost: number;
+  total_amount?: number;
+  total_with_vat?: number;
+  items_count?: number;
   labor_cost: number;
   material_cost: number;
   equipment_cost: number;
@@ -269,6 +273,16 @@ export interface CreateEmployeeForm {
   salary: number;
   phone?: string;
   email?: string;
+  status?: string;
+  passport_series?: string;
+  passport_number?: string;
+  passport_issued_by?: string;
+  passport_issued_date?: string;
+  address?: string;
+  birth_date?: string;
+  tax_id?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
 }
 
 // Filter and Search types

@@ -1,0 +1,159 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.updateProjectProgress = exports.getProjectParticipants = exports.getProjectStatistics = exports.deleteProject = exports.updateProject = exports.createProject = exports.getProject = exports.getProjects = void 0;
+const supabase_1 = require("../utils/supabase");
+const errorHandler_1 = require("../middleware/errorHandler");
+const logger_1 = require("../middleware/logger");
+exports.getProjects = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const { page = '1', limit = '10', status, manager_id, client_company_id, search, sort = 'created_at', order = 'desc' } = req.query;
+    const filters = {};
+    if (status)
+        filters.status = status;
+    if (manager_id)
+        filters.manager_id = manager_id;
+    if (client_company_id)
+        filters.client_company_id = client_company_id;
+    if (search)
+        filters.search = search;
+    const result = await supabase_1.dbService.getPaginated('projects', parseInt(page), parseInt(limit), filters, { column: sort, ascending: order === 'asc' });
+    res.json({
+        success: true,
+        data: result.data,
+        pagination: {
+            page: result.page,
+            limit: result.limit,
+            total: result.total,
+            totalPages: result.totalPages
+        }
+    });
+});
+exports.getProject = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const { id } = req.params;
+    const project = await supabase_1.dbService.getById('projects', id);
+    if (!project) {
+        throw new errorHandler_1.AppError('Project not found', 404);
+    }
+    res.json({
+        success: true,
+        data: project
+    });
+});
+exports.createProject = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    if (!req.user) {
+        throw new errorHandler_1.AppError('User not authenticated', 401);
+    }
+    const projectData = {
+        ...req.body,
+        manager_id: req.user.id,
+        actual_cost: 0,
+        progress_percent: 0
+    };
+    const project = await supabase_1.dbService.create('projects', projectData);
+    (0, logger_1.logInfo)('Project created', { projectId: project.id, userId: req.user.id });
+    res.status(201).json({
+        success: true,
+        message: 'Project created successfully',
+        data: project
+    });
+});
+exports.updateProject = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const { id } = req.params;
+    const project = await supabase_1.dbService.update('projects', id, req.body);
+    (0, logger_1.logInfo)('Project updated', { projectId: id, userId: req.user?.id });
+    res.json({
+        success: true,
+        message: 'Project updated successfully',
+        data: project
+    });
+});
+exports.deleteProject = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const { id } = req.params;
+    await supabase_1.dbService.delete('projects', id);
+    (0, logger_1.logInfo)('Project deleted', { projectId: id, userId: req.user?.id });
+    res.json({
+        success: true,
+        message: 'Project deleted successfully'
+    });
+});
+exports.getProjectStatistics = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const { id } = req.params;
+    const project = await supabase_1.dbService.getById('projects', id);
+    if (!project) {
+        throw new errorHandler_1.AppError('Project not found', 404);
+    }
+    const tasks = await supabase_1.dbService.getBy('tasks', { project_id: id });
+    const completedTasks = tasks.filter((task) => task.status === 'completed');
+    const overdueTasks = tasks.filter((task) => task.due_date && new Date(task.due_date) < new Date() && task.status !== 'completed');
+    const stages = await supabase_1.dbService.getBy('project_stages', { project_id: id });
+    const completedStages = stages.filter((stage) => stage.status === 'completed');
+    const financialOps = await supabase_1.dbService.getBy('financial_operations', { project_id: id });
+    const totalIncome = financialOps
+        .filter((op) => op.operation_type === 'income')
+        .reduce((sum, op) => sum + Number(op.amount), 0);
+    const totalExpenses = financialOps
+        .filter((op) => op.operation_type === 'expense')
+        .reduce((sum, op) => sum + Number(op.amount), 0);
+    const statistics = {
+        project: project,
+        tasks: {
+            total: tasks.length,
+            completed: completedTasks.length,
+            overdue: overdueTasks.length,
+            completion_rate: tasks.length > 0 ? (completedTasks.length / tasks.length) * 100 : 0
+        },
+        stages: {
+            total: stages.length,
+            completed: completedStages.length,
+            completion_rate: stages.length > 0 ? (completedStages.length / stages.length) * 100 : 0
+        },
+        finance: {
+            budget: Number(project.budget) || 0,
+            actual_cost: Number(project.actual_cost) || 0,
+            income: totalIncome,
+            expenses: totalExpenses,
+            profit: totalIncome - totalExpenses,
+            budget_utilization: project.budget ? (Number(project.actual_cost) / Number(project.budget)) * 100 : 0
+        }
+    };
+    res.json({
+        success: true,
+        data: statistics
+    });
+});
+exports.getProjectParticipants = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const { id } = req.params;
+    const tasks = await supabase_1.dbService.getBy('tasks', { project_id: id });
+    const assignedUsers = [...new Set(tasks.map((task) => task.assigned_to).filter(Boolean))];
+    const stages = await supabase_1.dbService.getBy('project_stages', { project_id: id });
+    const responsibleUsers = [...new Set(stages.map((stage) => stage.responsible_id).filter(Boolean))];
+    const allParticipants = [...new Set([...assignedUsers, ...responsibleUsers])];
+    const participants = [];
+    for (const userId of allParticipants) {
+        const user = await supabase_1.dbService.getById('profiles', userId);
+        if (user) {
+            participants.push(user);
+        }
+    }
+    res.json({
+        success: true,
+        data: participants
+    });
+});
+exports.updateProjectProgress = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const { id } = req.params;
+    const { progress_percent } = req.body;
+    if (progress_percent < 0 || progress_percent > 100) {
+        throw new errorHandler_1.AppError('Progress must be between 0 and 100', 400);
+    }
+    const project = await supabase_1.dbService.update('projects', id, {
+        progress_percent,
+        ...(progress_percent === 100 && { status: 'completed', end_date: new Date().toISOString() })
+    });
+    (0, logger_1.logInfo)('Project progress updated', { projectId: id, progress: progress_percent, userId: req.user?.id });
+    res.json({
+        success: true,
+        message: 'Project progress updated successfully',
+        data: project
+    });
+});
+//# sourceMappingURL=projects.js.map

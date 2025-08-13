@@ -189,8 +189,8 @@ export const getOverdueTasks = asyncHandler(async (req: AuthenticatedRequest, re
     query = query.eq('assigned_to', assigned_to);
   }
 
-  const offset = (parseInt(page) - 1) * parseInt(limit);
-  query = query.range(offset, offset + parseInt(limit) - 1);
+  const offset = (parseInt(page as string) - 1) * parseInt(limit as string);
+  query = query.range(offset, offset + parseInt(limit as string) - 1);
 
   const { data, error, count } = await query;
 
@@ -199,14 +199,14 @@ export const getOverdueTasks = asyncHandler(async (req: AuthenticatedRequest, re
   }
 
   const total = count || 0;
-  const totalPages = Math.ceil(total / parseInt(limit));
+  const totalPages = Math.ceil(total / parseInt(limit as string));
 
   res.json({
     success: true,
     data: data || [],
     pagination: {
-      page: parseInt(page),
-      limit: parseInt(limit),
+      page: parseInt(page as string),
+      limit: parseInt(limit as string),
       total,
       totalPages
     }
@@ -275,25 +275,28 @@ export const addTimeToTask = asyncHandler(async (req: AuthenticatedRequest, res:
 export const getTasksStatistics = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   const { project_id } = req.query;
 
-  let baseQuery = supabase.from('tasks');
-  
-  if (project_id) {
-    baseQuery = baseQuery.eq('project_id', project_id);
-  }
+  // Формируем запросы для статистики
+  const queries = project_id ? [
+    supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('project_id', project_id),
+    supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('project_id', project_id).eq('status', 'completed'),
+    supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('project_id', project_id).eq('status', 'in_progress'),
+    supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('project_id', project_id).lt('due_date', new Date().toISOString()).not('status', 'eq', 'completed'),
+    supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('project_id', project_id).eq('priority', 'high')
+  ] : [
+    supabase.from('tasks').select('*', { count: 'exact', head: true }),
+    supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
+    supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('status', 'in_progress'),
+    supabase.from('tasks').select('*', { count: 'exact', head: true }).lt('due_date', new Date().toISOString()).not('status', 'eq', 'completed'),
+    supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('priority', 'high')
+  ];
 
   const [
     { count: totalTasks },
     { count: completedTasks },
     { count: inProgressTasks },
-    { count: overdueTasks }
-  ] = await Promise.all([
-    supabase.from('tasks').select('*', { count: 'exact', head: true }),
-    supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
-    supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('status', 'in_progress'),
-    supabase.from('tasks').select('*', { count: 'exact', head: true })
-      .lt('due_date', new Date().toISOString().split('T')[0])
-      .not('status', 'in', '(completed,cancelled)')
-  ]);
+    { count: overdueTasks },
+    { count: highPriorityTasks }
+  ] = await Promise.all(queries);
 
   const statistics = {
     total: totalTasks || 0,

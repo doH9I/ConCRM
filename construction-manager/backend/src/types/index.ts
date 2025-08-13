@@ -243,8 +243,7 @@ export interface KsReport extends BaseEntity {
 }
 
 // Позиция КС
-export interface KsItem {
-  id: string;
+export interface KsItem extends BaseEntity {
   ks_report_id: string;
   estimate_item_id?: string;
   order_number?: number;
@@ -257,7 +256,6 @@ export interface KsItem {
   total_amount?: number;
   previous_amount: number;
   current_amount?: number;
-  created_at: string;
 }
 
 // Дефектовка
@@ -276,19 +274,19 @@ export interface Defect extends BaseEntity {
   photo_urls?: string[];
 }
 
-// Файл/вложение
-export interface Attachment {
-  id: string;
+// Вложения
+export interface Attachment extends BaseEntity {
   name: string;
   original_name: string;
   file_path: string;
-  file_size?: number;
+  file_size: number;
   mime_type?: string;
   entity_type: string;
   entity_id: string;
   uploaded_by?: string;
   ocr_text?: string;
-  created_at: string;
+  search_vector?: string;
+  description?: string;
 }
 
 // Настройки компании

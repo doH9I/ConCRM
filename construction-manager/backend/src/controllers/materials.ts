@@ -31,15 +31,20 @@ export const getMaterials = asyncHandler(async (req: AuthenticatedRequest, res: 
     { column: sort as string, ascending: order === 'asc' }
   );
 
-  // Если запрошены материалы с низким остатком
+  // Специальная обработка для уведомлений о минимальном остатке
   if (min_stock_alert === 'true') {
-    const { data: lowStockMaterials } = await supabase
+    const { data: allMaterials } = await supabase
       .from('materials')
       .select(`
         *,
-        material_stock!inner(current_stock)
-      `)
-      .lt('material_stock.current_stock', supabase.raw('materials.min_stock'));
+        material_stock(current_stock, project_id)
+      `);
+
+    const lowStockMaterials = allMaterials?.filter(material => 
+      material.material_stock?.some((stock: any) => 
+        stock.current_stock < (material.min_stock || 0)
+      )
+    );
 
     result.data = lowStockMaterials || [];
     result.total = lowStockMaterials?.length || 0;
@@ -283,8 +288,23 @@ export const getMaterialStock = asyncHandler(async (req: AuthenticatedRequest, r
   if (project_id) query = query.eq('project_id', project_id);
   if (material_id) query = query.eq('material_id', material_id);
   
+  // Специальная обработка для материалов с низким остатком
   if (low_stock === 'true') {
-    query = query.lt('current_stock', supabase.raw('materials.min_stock'));
+    // Получаем материалы с низким остатком отдельным запросом
+    const { data: materialsWithStock } = await supabase
+      .from('materials')
+      .select(`
+        *,
+        material_stock!inner(current_stock, project_id)
+      `);
+
+    const lowStockMaterials = materialsWithStock?.filter(material => 
+      material.material_stock.some((stock: any) => 
+        stock.current_stock < (material.min_stock || 0)
+      )
+    );
+
+    query = query.in('id', lowStockMaterials?.map(m => m.id) || []);
   }
 
   const offset = (parseInt(page as string) - 1) * parseInt(limit as string);
@@ -326,19 +346,23 @@ export const getWarehouseStats = asyncHandler(async (req: AuthenticatedRequest, 
   // Получаем общую статистику
   const [
     { count: totalMaterials },
-    { count: lowStockMaterials },
+    { data: allStockWithMaterials },
     { data: stockData }
   ] = await Promise.all([
     supabase.from('materials').select('*', { count: 'exact', head: true }),
-    supabase.from('material_stock').select('*, materials!inner(min_stock)', { count: 'exact', head: true })
-      .lt('current_stock', supabase.raw('materials.min_stock')),
+    supabase.from('material_stock').select('current_stock, materials!inner(min_stock)'),
     supabase.from('material_stock').select('current_stock, reserved_stock')
   ]);
+
+  // Подсчитываем материалы с низким остатком
+  const lowStockCount = allStockWithMaterials?.filter(stock => 
+    stock.current_stock < ((stock.materials as any)?.min_stock || 0)
+  ).length || 0;
 
   const stats = {
     materials: {
       total: totalMaterials || 0,
-      low_stock: lowStockMaterials || 0
+      low_stock: lowStockCount
     },
     operations: {
       total: operations?.length || 0,

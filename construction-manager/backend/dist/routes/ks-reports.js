@@ -1,0 +1,20 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const auth_1 = require("../middleware/auth");
+const ks_reports_1 = require("../controllers/ks-reports");
+const router = (0, express_1.Router)();
+router.use(auth_1.authenticate);
+router.get('/', ks_reports_1.getKsReports);
+router.get('/:id', ks_reports_1.getKsReport);
+router.post('/', ks_reports_1.createKsReport);
+router.put('/:id', ks_reports_1.updateKsReport);
+router.delete('/:id', ks_reports_1.deleteKsReport);
+router.post('/:id/items', ks_reports_1.addKsItem);
+router.put('/:id/items/:itemId', ks_reports_1.updateKsItem);
+router.delete('/:id/items/:itemId', ks_reports_1.deleteKsItem);
+router.post('/:id/approve', ks_reports_1.approveKsReport);
+router.get('/:id/export/pdf', ks_reports_1.exportKsReportToPDF);
+router.post('/generate-from-estimate/:estimateId', ks_reports_1.generateKsFromEstimate);
+exports.default = router;
+//# sourceMappingURL=ks-reports.js.map

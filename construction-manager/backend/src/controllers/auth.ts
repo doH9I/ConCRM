@@ -85,8 +85,8 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     .single();
 
   if (profileError || !profile) {
-    logError('Profile not found after login', profileError, { email, userId: authData.user.id });
-    throw new AppError('User profile not found', 404);
+    logError('Profile not found after login', profileError || new Error('Profile not found'), { email, userId: authData.user.id });
+    throw new AppError('Profile not found', 404);
   }
 
   // Проверяем, активен ли пользователь
