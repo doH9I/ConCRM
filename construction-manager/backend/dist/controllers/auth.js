@@ -65,8 +65,8 @@ exports.login = (0, errorHandler_1.asyncHandler)(async (req, res) => {
         .eq('id', authData.user.id)
         .single();
     if (profileError || !profile) {
-        (0, logger_1.logError)('Profile not found after login', profileError, { email, userId: authData.user.id });
-        throw new errorHandler_1.AppError('User profile not found', 404);
+        (0, logger_1.logError)('Profile not found after login', profileError || new Error('Profile not found'), { email, userId: authData.user.id });
+        throw new errorHandler_1.AppError('Profile not found', 404);
     }
     if (!profile.is_active) {
         throw new errorHandler_1.AppError('User account is deactivated', 401);

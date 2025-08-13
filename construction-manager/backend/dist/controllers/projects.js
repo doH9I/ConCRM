@@ -82,16 +82,16 @@ exports.getProjectStatistics = (0, errorHandler_1.asyncHandler)(async (req, res)
         throw new errorHandler_1.AppError('Project not found', 404);
     }
     const tasks = await supabase_1.dbService.getBy('tasks', { project_id: id });
-    const completedTasks = tasks.filter(task => task.status === 'completed');
-    const overdueTasks = tasks.filter(task => task.due_date && new Date(task.due_date) < new Date() && task.status !== 'completed');
+    const completedTasks = tasks.filter((task) => task.status === 'completed');
+    const overdueTasks = tasks.filter((task) => task.due_date && new Date(task.due_date) < new Date() && task.status !== 'completed');
     const stages = await supabase_1.dbService.getBy('project_stages', { project_id: id });
-    const completedStages = stages.filter(stage => stage.status === 'completed');
+    const completedStages = stages.filter((stage) => stage.status === 'completed');
     const financialOps = await supabase_1.dbService.getBy('financial_operations', { project_id: id });
     const totalIncome = financialOps
-        .filter(op => op.operation_type === 'income')
+        .filter((op) => op.operation_type === 'income')
         .reduce((sum, op) => sum + Number(op.amount), 0);
     const totalExpenses = financialOps
-        .filter(op => op.operation_type === 'expense')
+        .filter((op) => op.operation_type === 'expense')
         .reduce((sum, op) => sum + Number(op.amount), 0);
     const statistics = {
         project: project,
@@ -123,9 +123,9 @@ exports.getProjectStatistics = (0, errorHandler_1.asyncHandler)(async (req, res)
 exports.getProjectParticipants = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const { id } = req.params;
     const tasks = await supabase_1.dbService.getBy('tasks', { project_id: id });
-    const assignedUsers = [...new Set(tasks.map(task => task.assigned_to).filter(Boolean))];
+    const assignedUsers = [...new Set(tasks.map((task) => task.assigned_to).filter(Boolean))];
     const stages = await supabase_1.dbService.getBy('project_stages', { project_id: id });
-    const responsibleUsers = [...new Set(stages.map(stage => stage.responsible_id).filter(Boolean))];
+    const responsibleUsers = [...new Set(stages.map((stage) => stage.responsible_id).filter(Boolean))];
     const allParticipants = [...new Set([...assignedUsers, ...responsibleUsers])];
     const participants = [];
     for (const userId of allParticipants) {

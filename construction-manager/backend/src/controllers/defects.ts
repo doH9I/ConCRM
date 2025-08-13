@@ -168,8 +168,8 @@ export const reopenDefect = asyncHandler(async (req: AuthenticatedRequest, res: 
 
   const defect = await dbService.update<Defect>('defects', id, {
     status: 'open',
-    resolved_at: null,
-    resolution_notes: null
+    resolved_at: undefined,
+    resolution_notes: undefined
   });
 
   logInfo('Defect reopened', { defectId: id, userId: req.user?.id });

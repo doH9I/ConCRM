@@ -206,7 +206,7 @@ const Timesheet: React.FC = () => {
   if (error) {
     return (
       <Alert severity="error" sx={{ mb: 2 }}>
-        Ошибка загрузки табеля: {error.message}
+        Ошибка загрузки табеля: {(error as any).message || 'Неизвестная ошибка'}
       </Alert>
     );
   }

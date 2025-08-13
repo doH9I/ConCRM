@@ -184,18 +184,20 @@ exports.addTimeToTask = (0, errorHandler_1.asyncHandler)(async (req, res) => {
 });
 exports.getTasksStatistics = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const { project_id } = req.query;
-    let baseQuery = supabase_1.supabase.from('tasks');
-    if (project_id) {
-        baseQuery = baseQuery.eq('project_id', project_id);
-    }
-    const [{ count: totalTasks }, { count: completedTasks }, { count: inProgressTasks }, { count: overdueTasks }] = await Promise.all([
+    const queries = project_id ? [
+        supabase_1.supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('project_id', project_id),
+        supabase_1.supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('project_id', project_id).eq('status', 'completed'),
+        supabase_1.supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('project_id', project_id).eq('status', 'in_progress'),
+        supabase_1.supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('project_id', project_id).lt('due_date', new Date().toISOString()).not('status', 'eq', 'completed'),
+        supabase_1.supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('project_id', project_id).eq('priority', 'high')
+    ] : [
         supabase_1.supabase.from('tasks').select('*', { count: 'exact', head: true }),
         supabase_1.supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
         supabase_1.supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('status', 'in_progress'),
-        supabase_1.supabase.from('tasks').select('*', { count: 'exact', head: true })
-            .lt('due_date', new Date().toISOString().split('T')[0])
-            .not('status', 'in', '(completed,cancelled)')
-    ]);
+        supabase_1.supabase.from('tasks').select('*', { count: 'exact', head: true }).lt('due_date', new Date().toISOString()).not('status', 'eq', 'completed'),
+        supabase_1.supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('priority', 'high')
+    ];
+    const [{ count: totalTasks }, { count: completedTasks }, { count: inProgressTasks }, { count: overdueTasks }, { count: highPriorityTasks }] = await Promise.all(queries);
     const statistics = {
         total: totalTasks || 0,
         completed: completedTasks || 0,

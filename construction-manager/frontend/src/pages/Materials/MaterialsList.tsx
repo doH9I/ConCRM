@@ -184,7 +184,7 @@ const MaterialsList: React.FC = () => {
   if (error) {
     return (
       <Alert severity="error" sx={{ mb: 2 }}>
-        Ошибка загрузки материалов: {error.message}
+        Ошибка загрузки материалов: {(error as any).message || 'Неизвестная ошибка'}
       </Alert>
     );
   }

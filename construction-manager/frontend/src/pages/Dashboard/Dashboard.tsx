@@ -122,8 +122,8 @@ const Dashboard: React.FC = () => {
       </Typography>
 
       {/* Статистические карточки */}
-      <Grid container spacing={3} mb={3}>
-        <Grid item xs={12} sm={6} md={3}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
+        <Box sx={{ flex: '1 1 300px', minWidth: '250px' }}>
           <StatCard
             title="Активные проекты"
             value={25}
@@ -131,8 +131,8 @@ const Dashboard: React.FC = () => {
             icon={<Assignment />}
             color="#1976d2"
           />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        </Box>
+        <Box sx={{ flex: '1 1 300px', minWidth: '250px' }}>
           <StatCard
             title="Сотрудники"
             value={148}
@@ -140,17 +140,17 @@ const Dashboard: React.FC = () => {
             icon={<People />}
             color="#4caf50"
           />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        </Box>
+        <Box sx={{ flex: '1 1 300px', minWidth: '250px' }}>
           <StatCard
             title="Доходы (млн ₽)"
             value="2.4"
             change={8}
-            icon={<AccountBalance />}
+            icon={<TrendingUp />}
             color="#ff9800"
           />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        </Box>
+        <Box sx={{ flex: '1 1 300px', minWidth: '250px' }}>
           <StatCard
             title="Материалы на складе"
             value={1250}
@@ -158,131 +158,152 @@ const Dashboard: React.FC = () => {
             icon={<Inventory />}
             color="#9c27b0"
           />
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
 
-      <Grid container spacing={3}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
         {/* График проектов */}
-        <Grid item xs={12} md={8}>
+        <Box sx={{ flex: '2 1 500px', minWidth: '400px' }}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                Динамика проектов
+                Статистика проектов
               </Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={projectsData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="active" fill="#1976d2" name="Активные" />
-                  <Bar dataKey="completed" fill="#4caf50" name="Завершенные" />
-                </BarChart>
-              </ResponsiveContainer>
+              <Box 
+                sx={{ 
+                  height: 300, 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  bgcolor: 'grey.50',
+                  borderRadius: 1
+                }}
+              >
+                <Typography variant="body2" color="text.secondary">
+                  График статистики проектов
+                </Typography>
+              </Box>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
         {/* Финансовая диаграмма */}
-        <Grid item xs={12} md={4}>
+        <Box sx={{ flex: '1 1 300px', minWidth: '300px' }}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                Финансовая сводка
+                Распределение бюджета
               </Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={financialData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={120}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {financialData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value: any) => `${(value / 1000000).toFixed(1)} млн ₽`} />
-                </PieChart>
-              </ResponsiveContainer>
+              <Box 
+                sx={{ 
+                  height: 300, 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  bgcolor: 'grey.50',
+                  borderRadius: 1
+                }}
+              >
+                <Typography variant="body2" color="text.secondary">
+                  Диаграмма бюджета
+                </Typography>
+              </Box>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
         {/* Последние проекты */}
-        <Grid item xs={12} md={6}>
+        <Box sx={{ flex: '1 1 400px', minWidth: '350px' }}>
           <Card>
             <CardContent>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                 <Typography variant="h6">
-                  Текущие проекты
+                  Последние проекты
                 </Typography>
-                <Button size="small">Все проекты</Button>
+                <Button size="small">Посмотреть все</Button>
               </Box>
               <List>
-                {recentProjects.map((project) => (
-                  <ListItem key={project.id} divider>
-                    <ListItemIcon>
-                      {project.status === 'completed' ? (
-                        <CheckCircle color="success" />
-                      ) : project.status === 'warning' ? (
-                        <Warning color="warning" />
-                      ) : (
-                        <Schedule color="primary" />
-                      )}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={project.name}
-                      secondary={`Прогресс: ${project.progress}%`}
-                    />
-                    <IconButton size="small">
-                      <MoreVert />
-                    </IconButton>
-                  </ListItem>
-                ))}
+                <ListItem>
+                  <ListItemIcon>
+                    <Avatar sx={{ bgcolor: 'primary.main' }}>1</Avatar>
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Жилой комплекс 'Солнечный'"
+                    secondary="Статус: В работе"
+                  />
+                  <Chip label="Активен" color="success" size="small" />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon>
+                    <Avatar sx={{ bgcolor: 'primary.main' }}>2</Avatar>
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Офисный центр 'Бизнес-плаза'"
+                    secondary="Статус: Планирование"
+                  />
+                  <Chip label="Планирование" color="warning" size="small" />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon>
+                    <Avatar sx={{ bgcolor: 'primary.main' }}>3</Avatar>
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Торговый центр 'Мега'"
+                    secondary="Статус: Завершен"
+                  />
+                  <Chip label="Завершен" color="success" size="small" />
+                </ListItem>
               </List>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
         {/* Последние задачи */}
-        <Grid item xs={12} md={6}>
+        <Box sx={{ flex: '1 1 400px', minWidth: '350px' }}>
           <Card>
             <CardContent>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                 <Typography variant="h6">
-                  Срочные задачи
+                  Текущие задачи
                 </Typography>
-                <Button size="small">Все задачи</Button>
+                <Button size="small">Посмотреть все</Button>
               </Box>
               <List>
-                {recentTasks.map((task) => (
-                  <ListItem key={task.id} divider>
-                    <ListItemText
-                      primary={task.title}
-                      secondary={`${task.assignee} • ${task.dueDate}`}
-                    />
-                    <Chip
-                      label={
-                        task.priority === 'high' ? 'Высокий' :
-                        task.priority === 'medium' ? 'Средний' : 'Низкий'
-                      }
-                      size="small"
-                      color={
-                        task.priority === 'high' ? 'error' :
-                        task.priority === 'medium' ? 'warning' : 'default'
-                      }
-                    />
-                  </ListItem>
-                ))}
+                <ListItem>
+                  <ListItemIcon>
+                    <Avatar sx={{ bgcolor: 'warning.main' }}>!</Avatar>
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Проверка качества материалов"
+                    secondary="Срок: сегодня"
+                  />
+                  <Chip label="Высокий" color="error" size="small" />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon>
+                    <Avatar sx={{ bgcolor: 'info.main' }}>2</Avatar>
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Согласование сметы"
+                    secondary="Срок: завтра"
+                  />
+                  <Chip label="Средний" color="warning" size="small" />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon>
+                    <Avatar sx={{ bgcolor: 'success.main' }}>3</Avatar>
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Обновление документации"
+                    secondary="Срок: на неделе"
+                  />
+                  <Chip label="Низкий" color="info" size="small" />
+                </ListItem>
               </List>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
     </Box>
   );
 };

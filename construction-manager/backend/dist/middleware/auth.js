@@ -6,18 +6,27 @@ const authenticate = async (req, res, next) => {
     try {
         const authHeader = req.headers.authorization;
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({
+            res.status(401).json({
                 success: false,
-                error: 'Missing or invalid authorization header'
+                error: 'Authorization header is required'
             });
+            return;
         }
         const token = authHeader.split(' ')[1];
+        if (!token) {
+            res.status(401).json({
+                success: false,
+                error: 'Token is required'
+            });
+            return;
+        }
         const { data: { user }, error } = await supabase_1.supabase.auth.getUser(token);
         if (error || !user) {
-            return res.status(401).json({
+            res.status(401).json({
                 success: false,
                 error: 'Invalid or expired token'
             });
+            return;
         }
         const { data: profile, error: profileError } = await supabase_1.supabase
             .from('profiles')
@@ -25,25 +34,24 @@ const authenticate = async (req, res, next) => {
             .eq('id', user.id)
             .single();
         if (profileError || !profile) {
-            return res.status(401).json({
+            res.status(401).json({
                 success: false,
                 error: 'User profile not found'
             });
+            return;
         }
-        if (!profile.is_active) {
-            return res.status(401).json({
-                success: false,
-                error: 'User account is deactivated'
-            });
-        }
-        req.user = profile;
+        req.user = {
+            id: user.id,
+            email: user.email || '',
+            ...profile
+        };
         next();
     }
     catch (error) {
         console.error('Authentication error:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
-            error: 'Internal server error during authentication'
+            error: 'Authentication failed'
         });
     }
 };
@@ -51,16 +59,18 @@ exports.authenticate = authenticate;
 const authorize = (allowedRoles) => {
     return (req, res, next) => {
         if (!req.user) {
-            return res.status(401).json({
+            res.status(401).json({
                 success: false,
                 error: 'User not authenticated'
             });
+            return;
         }
         if (!allowedRoles.includes(req.user.role)) {
-            return res.status(403).json({
+            res.status(403).json({
                 success: false,
                 error: 'Insufficient permissions'
             });
+            return;
         }
         next();
     };
@@ -211,16 +221,18 @@ const validateToken = async (req, res, next) => {
 exports.validateToken = validateToken;
 const requireActiveUser = (req, res, next) => {
     if (!req.user) {
-        return res.status(401).json({
+        res.status(401).json({
             success: false,
             error: 'User not authenticated'
         });
+        return;
     }
-    if (!req.user.is_active) {
-        return res.status(403).json({
+    if ('is_active' in req.user && !req.user.is_active) {
+        res.status(403).json({
             success: false,
-            error: 'User account is deactivated'
+            error: 'User account is inactive'
         });
+        return;
     }
     next();
 };

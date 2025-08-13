@@ -95,7 +95,7 @@ const EmployeesList: React.FC = () => {
   });
 
   const employees = employeesResponse?.data || [];
-  const departments = [...new Set(employees.map(emp => emp.department).filter(Boolean))];
+  const departments = Array.from(new Set(employees.map(emp => emp.department).filter(Boolean)));
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>, employeeId: string) => {
     setAnchorEl(event.currentTarget);
@@ -181,7 +181,7 @@ const EmployeesList: React.FC = () => {
   if (error) {
     return (
       <Alert severity="error" sx={{ mb: 2 }}>
-        Ошибка загрузки сотрудников: {error.message}
+        Ошибка загрузки сотрудников: {(error as any).message || 'Неизвестная ошибка'}
       </Alert>
     );
   }

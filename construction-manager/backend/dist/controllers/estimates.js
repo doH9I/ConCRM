@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.copyEstimate = exports.exportEstimateToExcel = exports.importEstimateFromExcel = exports.deleteEstimateItem = exports.updateEstimateItem = exports.addEstimateItem = exports.getEstimateItems = exports.approveEstimate = exports.deleteEstimate = exports.updateEstimate = exports.createEstimate = exports.getEstimate = exports.getEstimates = void 0;
+exports.calculateEstimateTotals = exports.duplicateEstimate = exports.copyEstimate = exports.exportEstimateToExcel = exports.importEstimateFromExcel = exports.deleteEstimateItem = exports.updateEstimateItem = exports.addEstimateItem = exports.getEstimateItems = exports.approveEstimate = exports.deleteEstimate = exports.updateEstimate = exports.createEstimate = exports.getEstimate = exports.getEstimates = void 0;
 const supabase_1 = require("../utils/supabase");
 const errorHandler_1 = require("../middleware/errorHandler");
 const logger_1 = require("../middleware/logger");
@@ -117,13 +117,20 @@ exports.updateEstimate = (0, errorHandler_1.asyncHandler)(async (req, res) => {
 });
 exports.deleteEstimate = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const { id } = req.params;
-    const { count } = await supabase_1.supabase
-        .from('ks_items')
-        .select('*', { count: 'exact', head: true })
-        .not('estimate_item_id', 'is', null)
-        .in('estimate_item_id', supabase_1.supabase.from('estimate_items').select('id').eq('estimate_id', id));
-    if (count && count > 0) {
-        throw new errorHandler_1.AppError('Cannot delete estimate with linked KS reports', 400);
+    const { data: estimateItems } = await supabase_1.supabase
+        .from('estimate_items')
+        .select('id')
+        .eq('estimate_id', id);
+    if (estimateItems && estimateItems.length > 0) {
+        const itemIds = estimateItems.map(item => item.id);
+        const { count } = await supabase_1.supabase
+            .from('ks_items')
+            .select('*', { count: 'exact', head: true })
+            .not('estimate_item_id', 'is', null)
+            .in('estimate_item_id', itemIds);
+        if (count && count > 0) {
+            throw new errorHandler_1.AppError('Cannot delete estimate with linked KS reports', 400);
+        }
     }
     await supabase_1.dbService.delete('estimates', id);
     (0, logger_1.logInfo)('Estimate deleted', { estimateId: id, userId: req.user?.id });
@@ -133,19 +140,18 @@ exports.deleteEstimate = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     });
 });
 exports.approveEstimate = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const { id } = req.params;
     if (!req.user) {
         throw new errorHandler_1.AppError('User not authenticated', 401);
     }
-    const { id } = req.params;
     const estimate = await supabase_1.dbService.update('estimates', id, {
         status: 'approved',
         approved_by: req.user.id,
         approved_at: new Date().toISOString()
     });
-    (0, logger_1.logInfo)('Estimate approved', { estimateId: id, approvedBy: req.user.id });
+    (0, logger_1.logInfo)('Estimate approved', { estimateId: id, userId: req.user.id });
     res.json({
         success: true,
-        message: 'Estimate approved successfully',
         data: estimate
     });
 });
@@ -237,59 +243,7 @@ exports.importEstimateFromExcel = (0, errorHandler_1.asyncHandler)(async (req, r
         throw new errorHandler_1.AppError('Excel file is required', 400);
     }
     try {
-        const workbook = new ExcelJS.Workbook();
-        await workbook.xlsx.load(req.file.buffer);
-        const worksheet = workbook.getWorksheet(1);
-        const items = [];
-        worksheet.eachRow((row, rowNumber) => {
-            if (rowNumber > 1) {
-                const values = row.values;
-                if (values.length >= 6 && values[2] && values[3] && values[4] && values[5]) {
-                    items.push({
-                        estimate_id,
-                        order_number: values[1] || rowNumber - 1,
-                        name: values[2],
-                        unit: values[3],
-                        quantity: Number(values[4]) || 0,
-                        unit_price: Number(values[5]) || 0,
-                        total_price: (Number(values[4]) || 0) * (Number(values[5]) || 0),
-                        category: values[6] || 'Общие работы',
-                        labor_cost: Number(values[7]) || 0,
-                        material_cost: Number(values[8]) || 0,
-                        equipment_cost: Number(values[9]) || 0,
-                        notes: values[10] || ''
-                    });
-                }
-            }
-        });
-        if (items.length === 0) {
-            throw new errorHandler_1.AppError('No valid items found in Excel file', 400);
-        }
-        await supabase_1.supabase
-            .from('estimate_items')
-            .delete()
-            .eq('estimate_id', estimate_id);
-        const { data: insertedItems, error } = await supabase_1.supabase
-            .from('estimate_items')
-            .insert(items)
-            .select();
-        if (error) {
-            throw new errorHandler_1.AppError(`Failed to import items: ${error.message}`, 400);
-        }
-        await recalculateEstimateTotal(estimate_id);
-        (0, logger_1.logInfo)('Estimate imported from Excel', {
-            estimateId: estimate_id,
-            itemsCount: items.length,
-            userId: req.user.id
-        });
-        res.json({
-            success: true,
-            message: `Successfully imported ${items.length} items from Excel`,
-            data: {
-                imported_items: items.length,
-                items: insertedItems
-            }
-        });
+        throw new errorHandler_1.AppError('Excel import temporarily disabled - please use manual input', 400);
     }
     catch (error) {
         throw new errorHandler_1.AppError(`Failed to process Excel file: ${error.message}`, 400);
@@ -400,6 +354,63 @@ exports.copyEstimate = (0, errorHandler_1.asyncHandler)(async (req, res) => {
         success: true,
         message: 'Estimate copied successfully',
         data: newEstimate
+    });
+});
+exports.duplicateEstimate = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const { id } = req.params;
+    if (!req.user) {
+        throw new errorHandler_1.AppError('User not authenticated', 401);
+    }
+    const { data: originalEstimate, error } = await supabase_1.supabase
+        .from('estimates')
+        .select(`
+      *,
+      estimate_items(*)
+    `)
+        .eq('id', id)
+        .single();
+    if (error || !originalEstimate) {
+        throw new errorHandler_1.AppError('Estimate not found', 404);
+    }
+    const { estimate_items, ...estimateData } = originalEstimate;
+    const duplicateData = {
+        ...estimateData,
+        id: undefined,
+        name: `${originalEstimate.name} (Копия)`,
+        number: `${originalEstimate.number}-COPY`,
+        status: 'draft',
+        version: 1,
+        created_by: req.user.id,
+        approved_by: null,
+        approved_at: null,
+        created_at: undefined,
+        updated_at: undefined
+    };
+    const newEstimate = await supabase_1.dbService.create('estimates', duplicateData);
+    if (estimate_items && estimate_items.length > 0) {
+        for (const item of estimate_items) {
+            const { id: itemId, created_at, ...itemData } = item;
+            await supabase_1.dbService.create('estimate_items', {
+                ...itemData,
+                estimate_id: newEstimate.id
+            });
+        }
+    }
+    await recalculateEstimateTotal(newEstimate.id);
+    (0, logger_1.logInfo)('Estimate duplicated', { originalId: id, newId: newEstimate.id, userId: req.user.id });
+    res.status(201).json({
+        success: true,
+        data: newEstimate
+    });
+});
+exports.calculateEstimateTotals = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const { id } = req.params;
+    await recalculateEstimateTotal(id);
+    const updatedEstimate = await supabase_1.dbService.getById('estimates', id);
+    (0, logger_1.logInfo)('Estimate totals calculated', { estimateId: id, userId: req.user?.id });
+    res.json({
+        success: true,
+        data: updatedEstimate
     });
 });
 async function recalculateEstimateTotal(estimateId) {

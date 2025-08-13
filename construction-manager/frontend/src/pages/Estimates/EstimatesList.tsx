@@ -220,7 +220,7 @@ const EstimatesList: React.FC = () => {
   if (error) {
     return (
       <Alert severity="error" sx={{ mb: 2 }}>
-        Ошибка загрузки смет: {error.message}
+        Ошибка загрузки смет: {(error as any).message || 'Неизвестная ошибка'}
       </Alert>
     );
   }

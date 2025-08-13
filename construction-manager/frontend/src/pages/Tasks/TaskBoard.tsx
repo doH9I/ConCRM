@@ -238,7 +238,7 @@ const TaskBoard: React.FC = () => {
   if (error) {
     return (
       <Alert severity="error" sx={{ mb: 2 }}>
-        Ошибка загрузки задач: {error.message}
+        Ошибка загрузки задач: {(error as any).message || 'Неизвестная ошибка'}
       </Alert>
     );
   }

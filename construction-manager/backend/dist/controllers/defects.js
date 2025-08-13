@@ -117,8 +117,8 @@ exports.reopenDefect = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const { id } = req.params;
     const defect = await supabase_1.dbService.update('defects', id, {
         status: 'open',
-        resolved_at: null,
-        resolution_notes: null
+        resolved_at: undefined,
+        resolution_notes: undefined
     });
     (0, logger_1.logInfo)('Defect reopened', { defectId: id, userId: req.user?.id });
     res.json({

@@ -146,7 +146,7 @@ const TaskDetail: React.FC = () => {
   }
 
   if (error) {
-    return <Alert severity="error">Ошибка загрузки задачи: {error.message}</Alert>;
+    return <Alert severity="error">Ошибка загрузки задачи: {(error as any).message || 'Неизвестная ошибка'}</Alert>;
   }
 
   if (isLoading || !task) {

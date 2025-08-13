@@ -184,7 +184,7 @@ exports.processOCR = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     if (!attachment) {
         throw new errorHandler_1.AppError('Attachment not found', 404);
     }
-    if (!attachment.mime_type.startsWith('image/')) {
+    if (!attachment.mime_type || !attachment.mime_type.startsWith('image/')) {
         throw new errorHandler_1.AppError('OCR is only available for images', 400);
     }
     try {
@@ -221,7 +221,7 @@ exports.processOCR = (0, errorHandler_1.asyncHandler)(async (req, res) => {
 async function processOCRAsync(attachmentId, filePath) {
     try {
         const attachment = await supabase_1.dbService.getById('attachments', attachmentId);
-        if (!attachment || !attachment.mime_type.startsWith('image/')) {
+        if (!attachment || !attachment.mime_type || !attachment.mime_type.startsWith('image/')) {
             return;
         }
         const { data: fileData, error } = await supabase_1.supabaseAdmin.storage

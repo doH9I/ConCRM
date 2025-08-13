@@ -9,11 +9,12 @@ const validate = (req, res, next) => {
             field: error.type === 'field' ? error.path : error.type,
             message: error.msg
         }));
-        return res.status(400).json({
+        res.status(400).json({
             success: false,
             error: 'Validation failed',
             details: errorMessages
         });
+        return;
     }
     next();
 };

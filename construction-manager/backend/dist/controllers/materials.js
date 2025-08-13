@@ -15,13 +15,13 @@ exports.getMaterials = (0, errorHandler_1.asyncHandler)(async (req, res) => {
         filters.search = search;
     let result = await supabase_1.dbService.getPaginated('materials', parseInt(page), parseInt(limit), filters, { column: sort, ascending: order === 'asc' });
     if (min_stock_alert === 'true') {
-        const { data: lowStockMaterials } = await supabase_1.supabase
+        const { data: allMaterials } = await supabase_1.supabase
             .from('materials')
             .select(`
         *,
-        material_stock!inner(current_stock)
-      `)
-            .lt('material_stock.current_stock', supabase_1.supabase.raw('materials.min_stock'));
+        material_stock(current_stock, project_id)
+      `);
+        const lowStockMaterials = allMaterials?.filter(material => material.material_stock?.some((stock) => stock.current_stock < (material.min_stock || 0)));
         result.data = lowStockMaterials || [];
         result.total = lowStockMaterials?.length || 0;
     }
@@ -189,7 +189,14 @@ exports.getMaterialStock = (0, errorHandler_1.asyncHandler)(async (req, res) => 
     if (material_id)
         query = query.eq('material_id', material_id);
     if (low_stock === 'true') {
-        query = query.lt('current_stock', supabase_1.supabase.raw('materials.min_stock'));
+        const { data: materialsWithStock } = await supabase_1.supabase
+            .from('materials')
+            .select(`
+        *,
+        material_stock!inner(current_stock, project_id)
+      `);
+        const lowStockMaterials = materialsWithStock?.filter(material => material.material_stock.some((stock) => stock.current_stock < (material.min_stock || 0)));
+        query = query.in('id', lowStockMaterials?.map(m => m.id) || []);
     }
     const offset = (parseInt(page) - 1) * parseInt(limit);
     query = query.range(offset, offset + parseInt(limit) - 1);
@@ -220,16 +227,16 @@ exports.getWarehouseStats = (0, errorHandler_1.asyncHandler)(async (req, res) =>
     if (date_to)
         operationsQuery = operationsQuery.lte('document_date', date_to);
     const { data: operations } = await operationsQuery;
-    const [{ count: totalMaterials }, { count: lowStockMaterials }, { data: stockData }] = await Promise.all([
+    const [{ count: totalMaterials }, { data: allStockWithMaterials }, { data: stockData }] = await Promise.all([
         supabase_1.supabase.from('materials').select('*', { count: 'exact', head: true }),
-        supabase_1.supabase.from('material_stock').select('*, materials!inner(min_stock)', { count: 'exact', head: true })
-            .lt('current_stock', supabase_1.supabase.raw('materials.min_stock')),
+        supabase_1.supabase.from('material_stock').select('current_stock, materials!inner(min_stock)'),
         supabase_1.supabase.from('material_stock').select('current_stock, reserved_stock')
     ]);
+    const lowStockCount = allStockWithMaterials?.filter(stock => stock.current_stock < (stock.materials?.min_stock || 0)).length || 0;
     const stats = {
         materials: {
             total: totalMaterials || 0,
-            low_stock: lowStockMaterials || 0
+            low_stock: lowStockCount
         },
         operations: {
             total: operations?.length || 0,

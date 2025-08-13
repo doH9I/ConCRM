@@ -124,24 +124,24 @@ export const getProjectStatistics = asyncHandler(async (req: AuthenticatedReques
   }
 
   // Получаем статистику задач
-  const tasks = await dbService.getBy('tasks', { project_id: id });
-  const completedTasks = tasks.filter(task => task.status === 'completed');
-  const overdueTasks = tasks.filter(task => 
+  const tasks = await dbService.getBy<any>('tasks', { project_id: id });
+  const completedTasks = tasks.filter((task: any) => task.status === 'completed');
+  const overdueTasks = tasks.filter((task: any) => 
     task.due_date && new Date(task.due_date) < new Date() && task.status !== 'completed'
   );
 
   // Получаем этапы проекта
-  const stages = await dbService.getBy('project_stages', { project_id: id });
-  const completedStages = stages.filter(stage => stage.status === 'completed');
+  const stages = await dbService.getBy<any>('project_stages', { project_id: id });
+  const completedStages = stages.filter((stage: any) => stage.status === 'completed');
 
   // Получаем финансовые операции
-  const financialOps = await dbService.getBy('financial_operations', { project_id: id });
+  const financialOps = await dbService.getBy<any>('financial_operations', { project_id: id });
   const totalIncome = financialOps
-    .filter(op => op.operation_type === 'income')
-    .reduce((sum, op) => sum + Number(op.amount), 0);
+    .filter((op: any) => op.operation_type === 'income')
+    .reduce((sum: number, op: any) => sum + Number(op.amount), 0);
   const totalExpenses = financialOps
-    .filter(op => op.operation_type === 'expense')
-    .reduce((sum, op) => sum + Number(op.amount), 0);
+    .filter((op: any) => op.operation_type === 'expense')
+    .reduce((sum: number, op: any) => sum + Number(op.amount), 0);
 
   const statistics = {
     project: project,
@@ -177,12 +177,12 @@ export const getProjectParticipants = asyncHandler(async (req: AuthenticatedRequ
   const { id } = req.params;
 
   // Получаем задачи проекта с назначенными пользователями
-  const tasks = await dbService.getBy('tasks', { project_id: id });
-  const assignedUsers = [...new Set(tasks.map(task => task.assigned_to).filter(Boolean))];
+  const tasks = await dbService.getBy<any>('tasks', { project_id: id });
+  const assignedUsers = [...new Set(tasks.map((task: any) => task.assigned_to).filter(Boolean))];
 
   // Получаем этапы проекта с ответственными
-  const stages = await dbService.getBy('project_stages', { project_id: id });
-  const responsibleUsers = [...new Set(stages.map(stage => stage.responsible_id).filter(Boolean))];
+  const stages = await dbService.getBy<any>('project_stages', { project_id: id });
+  const responsibleUsers = [...new Set(stages.map((stage: any) => stage.responsible_id).filter(Boolean))];
 
   // Объединяем всех участников
   const allParticipants = [...new Set([...assignedUsers, ...responsibleUsers])];

@@ -259,7 +259,7 @@ export const processOCR = asyncHandler(async (req: AuthenticatedRequest, res: Re
     throw new AppError('Attachment not found', 404);
   }
 
-  if (!attachment.mime_type.startsWith('image/')) {
+  if (!attachment.mime_type || !attachment.mime_type.startsWith('image/')) {
     throw new AppError('OCR is only available for images', 400);
   }
 
@@ -311,7 +311,7 @@ export const processOCR = asyncHandler(async (req: AuthenticatedRequest, res: Re
 async function processOCRAsync(attachmentId: string, filePath: string): Promise<void> {
   try {
     const attachment = await dbService.getById<Attachment>('attachments', attachmentId);
-    if (!attachment || !attachment.mime_type.startsWith('image/')) {
+    if (!attachment || !attachment.mime_type || !attachment.mime_type.startsWith('image/')) {
       return;
     }
 
