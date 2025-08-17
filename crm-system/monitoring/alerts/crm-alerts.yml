@@ -1,0 +1,176 @@
+groups:
+  - name: CRM System Alerts
+    rules:
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is above 80% for more than 5 minutes on {{ $labels.instance }}"
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is above 85% for more than 5 minutes on {{ $labels.instance }}"
+
+      # High disk usage
+      - alert: HighDiskUsage
+        expr: (node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High disk usage on {{ $labels.instance }}"
+          description: "Disk usage is above 90% for more than 5 minutes on {{ $labels.instance }}"
+
+      # Database connection issues
+      - alert: DatabaseConnectionHigh
+        expr: pg_stat_database_numbackends > 80
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High number of database connections"
+          description: "Database has {{ $value }} active connections"
+
+      # Redis memory usage
+      - alert: RedisMemoryHigh
+        expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Redis memory usage"
+          description: "Redis memory usage is above 80%"
+
+      # CRM Backend down
+      - alert: CRMBackendDown
+        expr: up{job="crm-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CRM Backend is down"
+          description: "CRM Backend service is not responding on {{ $labels.instance }}"
+
+      # CRM Frontend down
+      - alert: CRMFrontendDown
+        expr: up{job="crm-frontend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CRM Frontend is down"
+          description: "CRM Frontend service is not responding on {{ $labels.instance }}"
+
+      # High response time
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time"
+          description: "95th percentile response time is above 2 seconds"
+
+      # High error rate
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) * 100 > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate"
+          description: "Error rate is above 5% for the last 5 minutes"
+
+      # Database slow queries
+      - alert: DatabaseSlowQueries
+        expr: rate(pg_stat_activity_max_tx_duration{datname="crm_prod"}[5m]) > 30
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow database queries detected"
+          description: "Database queries are taking longer than 30 seconds"
+
+      # Backup failure
+      - alert: BackupFailure
+        expr: time() - pg_backup_last_success_timestamp > 86400
+        for: 1h
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database backup failed"
+          description: "No successful database backup in the last 24 hours"
+
+  - name: Infrastructure Alerts
+    rules:
+      # Docker daemon down
+      - alert: DockerDaemonDown
+        expr: up{job="docker"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Docker daemon is down"
+          description: "Docker daemon is not responding on {{ $labels.instance }}"
+
+      # Container restarting frequently
+      - alert: ContainerRestarting
+        expr: increase(container_restart_count[1h]) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container restarting frequently"
+          description: "Container {{ $labels.name }} has restarted {{ $value }} times in the last hour"
+
+      # High network usage
+      - alert: HighNetworkUsage
+        expr: rate(node_network_receive_bytes_total[5m]) > 1000000000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High network usage"
+          description: "Network receive rate is above 1GB/s on {{ $labels.instance }}"
+
+  - name: Business Metrics Alerts
+    rules:
+      # Low lead conversion rate
+      - alert: LowLeadConversion
+        expr: (leads_converted_total / leads_total) * 100 < 10
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low lead conversion rate"
+          description: "Lead conversion rate is below 10%"
+
+      # High customer churn
+      - alert: HighCustomerChurn
+        expr: rate(customers_lost_total[24h]) > 0.05
+        for: 2h
+        labels:
+          severity: warning
+        annotations:
+          summary: "High customer churn rate"
+          description: "Customer churn rate is above 5% in the last 24 hours"
+
+      # Low sales performance
+      - alert: LowSalesPerformance
+        expr: rate(sales_total[24h]) < 1000
+        for: 2h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low sales performance"
+          description: "Sales are below expected threshold of 1000 per day"

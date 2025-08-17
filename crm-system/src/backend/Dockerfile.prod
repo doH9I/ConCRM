@@ -1,0 +1,60 @@
+# Многоэтапная сборка для продакшна
+FROM node:18-alpine AS builder
+
+# Установить рабочую директорию
+WORKDIR /app
+
+# Скопировать файлы пакетов
+COPY package*.json ./
+
+# Установить все зависимости (включая зависимости для разработки)
+RUN npm ci
+
+# Скопировать исходный код
+COPY . .
+
+# Собрать приложение
+RUN npm run build
+
+# Этап продакшна
+FROM node:18-alpine AS production
+
+# Установить dumb-init для правильной обработки сигналов
+RUN apk add --no-cache dumb-init
+
+# Создать пользователя без прав root
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nestjs -u 1001
+
+# Установить рабочую директорию
+WORKDIR /app
+
+# Скопировать файлы пакетов
+COPY package*.json ./
+
+# Установить только продакшн зависимости
+RUN npm ci --only=production && npm cache clean --force
+
+# Скопировать собранное приложение из этапа builder
+COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
+COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nestjs:nodejs /app/package*.json ./
+
+# Создать необходимые директории
+RUN mkdir -p logs uploads && chown -R nestjs:nodejs logs uploads
+
+# Переключиться на пользователя без прав root
+USER nestjs
+
+# Открыть порт
+EXPOSE 3001
+
+# Проверка состояния
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node healthcheck.js
+
+# Использовать dumb-init для правильной обработки сигналов
+ENTRYPOINT ["dumb-init", "--"]
+
+# Запустить приложение
+CMD ["npm", "run", "start:prod"]

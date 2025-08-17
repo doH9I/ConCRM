@@ -1,0 +1,107 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: crm_prod
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${db_password}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../backups:/backups
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    networks:
+      - db-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${redis_password} --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - db-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # PostgreSQL Exporter for Prometheus
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres-exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "postgresql://postgres:${db_password}@postgres:5432/crm_prod?sslmode=disable"
+      PG_EXPORTER_EXTEND_QUERY_PATH: /etc/postgres_exporter/queries.yaml
+    ports:
+      - "9187:9187"
+    volumes:
+      - ./postgres-queries.yaml:/etc/postgres_exporter/queries.yaml:ro
+    networks:
+      - db-net
+    depends_on:
+      - postgres
+
+  # Redis Exporter for Prometheus
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: redis-exporter
+    restart: unless-stopped
+    environment:
+      REDIS_ADDR: redis://redis:6379
+      REDIS_PASSWORD: ${redis_password}
+    ports:
+      - "9121:9121"
+    networks:
+      - db-net
+    depends_on:
+      - redis
+
+  # Backup service
+  backup:
+    image: postgres:15-alpine
+    container_name: postgres-backup
+    restart: "no"
+    environment:
+      POSTGRES_PASSWORD: ${db_password}
+    volumes:
+      - ../backups:/backups
+      - ./backup.sh:/backup.sh:ro
+    networks:
+      - db-net
+    depends_on:
+      - postgres
+    command: >
+      sh -c "
+        chmod +x /backup.sh &&
+        /backup.sh
+      "
+
+networks:
+  db-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
