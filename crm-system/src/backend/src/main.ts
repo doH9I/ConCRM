@@ -6,16 +6,16 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS
+  // Включить CORS
   app.enableCors({
     origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
     credentials: true,
   });
 
-  // Global prefix
+  // Глобальный префикс
   app.setGlobalPrefix(process.env.API_PREFIX || 'api');
 
-  // Global validation pipe
+  // Глобальная валидация
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -24,7 +24,7 @@ async function bootstrap() {
     }),
   );
 
-  // Swagger documentation (only in development)
+  // Swagger документация (только в разработке)
   if (process.env.NODE_ENV !== 'production') {
     const config = new DocumentBuilder()
       .setTitle('CRM System API')
@@ -36,12 +36,12 @@ async function bootstrap() {
     SwaggerModule.setup('docs', app, document);
   }
 
-  // Prometheus metrics endpoint (using NestJS Prometheus module)
+  // Эндпоинт метрик Prometheus (используя модуль NestJS Prometheus)
   if (process.env.PROMETHEUS_ENABLED === 'true') {
-    console.log('Prometheus metrics enabled on /metrics endpoint');
+    console.log('Prometheus метрики включены на эндпоинте /metrics');
   }
 
-  // Health check endpoint
+  // Эндпоинт проверки состояния
   app.get('/health', (req, res) => {
     res.json({
       status: 'ok',
@@ -52,7 +52,7 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3001;
   await app.listen(port);
-  console.log(`CRM Backend is running on port ${port}`);
+  console.log(`CRM Backend запущен на порту ${port}`);
 }
 
 bootstrap();

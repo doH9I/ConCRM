@@ -8,7 +8,7 @@ const options = {
 };
 
 const request = http.request(options, (res) => {
-  console.log(`Health check status: ${res.statusCode}`);
+  console.log(`Статус проверки состояния: ${res.statusCode}`);
   if (res.statusCode === 200) {
     process.exit(0);
   } else {
@@ -17,12 +17,12 @@ const request = http.request(options, (res) => {
 });
 
 request.on('error', (err) => {
-  console.log('Health check failed:', err.message);
+  console.log('Проверка состояния не удалась:', err.message);
   process.exit(1);
 });
 
 request.on('timeout', () => {
-  console.log('Health check timeout');
+  console.log('Таймаут проверки состояния');
   request.destroy();
   process.exit(1);
 });

@@ -6,10 +6,10 @@ import { TerminusModule } from '@nestjs/terminus';
 import { PrometheusModule } from '@nestjs/prometheus';
 import { ScheduleModule } from '@nestjs/schedule';
 
-// Configuration
+// Конфигурация
 import { getTypeOrmConfig } from './config/typeorm.config';
 
-// Modules
+// Модули
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { CompaniesModule } from './modules/companies/companies.module';
@@ -20,44 +20,44 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 
-// Controllers
+// Контроллеры
 import { AppController } from './app.controller';
 import { HealthController } from './health.controller';
 
-// Services
+// Сервисы
 import { AppService } from './app.service';
 
 @Module({
   imports: [
-    // Configuration
+    // Конфигурация
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
     }),
     
-    // Database
+    // База данных
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: getTypeOrmConfig,
       inject: [ConfigService],
     }),
     
-    // Rate limiting
+    // Ограничение скорости
     ThrottlerModule.forRoot({
       ttl: 60,
       limit: 100,
     }),
     
-    // Health checks
+    // Проверки состояния
     TerminusModule,
     
-    // Prometheus metrics
+    // Метрики Prometheus
     PrometheusModule.register(),
     
-    // Scheduled tasks
+    // Планировщик задач
     ScheduleModule.forRoot(),
     
-    // Feature modules
+    // Функциональные модули
     AuthModule,
     UsersModule,
     CompaniesModule,

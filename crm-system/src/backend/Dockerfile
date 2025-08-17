@@ -1,38 +1,38 @@
-# Use Node.js 18 Alpine as base image
+# Использовать Node.js 18 Alpine как базовый образ
 FROM node:18-alpine
 
-# Set working directory
+# Установить рабочую директорию
 WORKDIR /app
 
-# Copy package files
+# Скопировать файлы пакетов
 COPY package*.json ./
 
-# Install dependencies
+# Установить зависимости
 RUN npm ci --only=production && npm cache clean --force
 
-# Copy source code
+# Скопировать исходный код
 COPY . .
 
-# Build the application
+# Собрать приложение
 RUN npm run build
 
-# Remove development dependencies
+# Удалить зависимости для разработки
 RUN npm prune --production
 
-# Create non-root user
+# Создать пользователя без прав root
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nestjs -u 1001
 
-# Change ownership of the app directory
+# Изменить владельца директории приложения
 RUN chown -R nestjs:nodejs /app
 USER nestjs
 
-# Expose port
+# Открыть порт
 EXPOSE 3001
 
-# Health check
+# Проверка состояния
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node healthcheck.js
 
-# Start the application
+# Запустить приложение
 CMD ["npm", "run", "start:prod"]

@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
+  # База данных PostgreSQL
   postgres:
     image: postgres:15-alpine
     container_name: crm_postgres
@@ -22,7 +22,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis Cache
+  # Кеш Redis
   redis:
     image: redis:7-alpine
     container_name: crm_redis
@@ -69,7 +69,7 @@ services:
       - crm_network
     restart: unless-stopped
 
-  # Prometheus (for metrics)
+  # Prometheus (для метрик)
   prometheus:
     image: prom/prometheus:latest
     container_name: crm_prometheus
@@ -89,7 +89,7 @@ services:
       - crm_network
     restart: unless-stopped
 
-  # Grafana (for dashboards)
+  # Grafana (для дашбордов)
   grafana:
     image: grafana/grafana:latest
     container_name: crm_grafana

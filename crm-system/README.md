@@ -1,189 +1,189 @@
-# 🏗️ Construction Company CRM System
+# 🏗️ CRM-система для строительной компании
 
-A comprehensive Customer Relationship Management (CRM) system designed specifically for construction companies. This system helps manage leads, projects, tasks, companies, and provides detailed reporting and analytics.
+Комплексная система управления взаимоотношениями с клиентами (CRM), специально разработанная для строительных компаний. Эта система помогает управлять лидами, проектами, задачами, компаниями и предоставляет детальную отчетность и аналитику.
 
-## ✨ Features
+## ✨ Возможности
 
-### 🔐 Authentication & Authorization
-- JWT-based authentication
-- Role-based access control (Admin, Manager, User)
-- Secure password hashing with bcrypt
-- Session management with Redis
+### 🔐 Аутентификация и авторизация
+- Аутентификация на основе JWT
+- Контроль доступа на основе ролей (Админ, Менеджер, Пользователь)
+- Безопасное хеширование паролей с bcrypt
+- Управление сессиями с Redis
 
-### 👥 User Management
-- User registration and profile management
-- Department-based organization
-- Activity tracking and last login monitoring
-- User activation/deactivation
+### 👥 Управление пользователями
+- Регистрация пользователей и управление профилями
+- Организация по отделам
+- Отслеживание активности и мониторинг последнего входа
+- Активация/деактивация пользователей
 
-### 🏢 Company Management
-- Client company profiles
-- Industry categorization
-- Contact person management
-- Company status tracking
+### 🏢 Управление компаниями
+- Профили клиентских компаний
+- Категоризация по отраслям
+- Управление контактными лицами
+- Отслеживание статуса компаний
 
-### 📋 Project Management
-- Project lifecycle management
-- Progress tracking
-- Budget and timeline management
-- Project categorization and tagging
+### 📋 Управление проектами
+- Управление жизненным циклом проектов
+- Отслеживание прогресса
+- Управление бюджетом и временными рамками
+- Категоризация и тегирование проектов
 
-### 🎯 Lead Management
-- Lead capture and qualification
-- Lead status tracking
-- Value estimation
-- Assignment to sales representatives
+### 🎯 Управление лидами
+- Захват и квалификация лидов
+- Отслеживание статуса лидов
+- Оценка стоимости
+- Назначение менеджерам по продажам
 
-### ✅ Task Management
-- Task creation and assignment
-- Priority and status management
-- Due date tracking
-- Progress monitoring
+### ✅ Управление задачами
+- Создание и назначение задач
+- Управление приоритетом и статусом
+- Отслеживание сроков выполнения
+- Мониторинг прогресса
 
-### 📊 Dashboard & Analytics
-- Real-time metrics and KPIs
-- Project progress visualization
-- Lead pipeline analysis
-- Performance analytics
+### 📊 Дашборд и аналитика
+- Метрики и KPI в реальном времени
+- Визуализация прогресса проектов
+- Анализ воронки лидов
+- Аналитика производительности
 
-### 📈 Reporting
-- Sales reports
-- Project performance reports
-- User productivity reports
-- Company analysis reports
+### 📈 Отчетность
+- Отчеты по продажам
+- Отчеты по производительности проектов
+- Отчеты по продуктивности пользователей
+- Аналитические отчеты по компаниям
 
-### 🔔 Notifications
-- Multi-channel notifications (Email, SMS, Telegram, Slack, Discord)
-- Automated alerts for important events
-- Customizable notification preferences
+### 🔔 Уведомления
+- Многоканальные уведомления (Email, SMS, Telegram, Slack, Discord)
+- Автоматические оповещения о важных событиях
+- Настраиваемые предпочтения уведомлений
 
-### 📊 Monitoring & Observability
-- Prometheus metrics collection
-- Grafana dashboards
-- Health checks and monitoring
-- Performance monitoring
+### 📊 Мониторинг и наблюдаемость
+- Сбор метрик Prometheus
+- Дашборды Grafana
+- Проверки состояния и мониторинг
+- Мониторинг производительности
 
-## 🏗️ Architecture
+## 🏗️ Архитектура
 
 ### Backend (NestJS)
-- **Framework**: NestJS with TypeScript
-- **Database**: PostgreSQL with TypeORM
-- **Cache**: Redis
-- **Authentication**: JWT + Passport
-- **Validation**: class-validator + class-transformer
-- **Documentation**: Swagger/OpenAPI
-- **Testing**: Jest + Supertest
+- **Фреймворк**: NestJS с TypeScript
+- **База данных**: PostgreSQL с TypeORM
+- **Кеш**: Redis
+- **Аутентификация**: JWT + Passport
+- **Валидация**: class-validator + class-transformer
+- **Документация**: Swagger/OpenAPI
+- **Тестирование**: Jest + Supertest
 
 ### Frontend (React)
-- **Framework**: React with TypeScript
-- **State Management**: Redux Toolkit
-- **UI Library**: Material-UI
-- **Routing**: React Router
-- **HTTP Client**: Axios
-- **Testing**: Jest + React Testing Library
+- **Фреймворк**: React с TypeScript
+- **Управление состоянием**: Redux Toolkit
+- **UI библиотека**: Material-UI
+- **Маршрутизация**: React Router
+- **HTTP клиент**: Axios
+- **Тестирование**: Jest + React Testing Library
 
-### Infrastructure
-- **Containerization**: Docker + Docker Compose
-- **Monitoring**: Prometheus + Grafana
-- **Database**: PostgreSQL 15
-- **Cache**: Redis 7
+### Инфраструктура
+- **Контейнеризация**: Docker + Docker Compose
+- **Мониторинг**: Prometheus + Grafana
+- **База данных**: PostgreSQL 15
+- **Кеш**: Redis 7
 - **CI/CD**: GitHub Actions
 
-## 🚀 Quick Start
+## 🚀 Быстрый старт
 
-### Prerequisites
-- Docker and Docker Compose
-- Node.js 18+ (for local development)
-- npm or yarn
+### Предварительные требования
+- Docker и Docker Compose
+- Node.js 18+ (для локальной разработки)
+- npm или yarn
 
-### 1. Clone the Repository
+### 1. Клонирование репозитория
 ```bash
-git clone <repository-url>
+git clone <url-репозитория>
 cd crm-system
 ```
 
-### 2. Run Development Setup
+### 2. Запуск настройки разработки
 ```bash
 ./scripts/dev-setup.sh
 ```
 
-This script will:
-- Create necessary configuration files
-- Install dependencies
-- Start all services with Docker Compose
-- Set up monitoring and dashboards
+Этот скрипт:
+- Создаст необходимые конфигурационные файлы
+- Установит зависимости
+- Запустит все сервисы с Docker Compose
+- Настроит мониторинг и дашборды
 
-### 3. Access the System
+### 3. Доступ к системе
 - **CRM Backend API**: http://localhost:3001
-- **Swagger Documentation**: http://localhost:3001/docs
-- **Grafana Dashboards**: http://localhost:3000 (admin/admin)
-- **Prometheus Metrics**: http://localhost:9090
+- **Swagger документация**: http://localhost:3001/docs
+- **Grafana дашборды**: http://localhost:3000 (admin/admin)
+- **Prometheus метрики**: http://localhost:9090
 
-## 🛠️ Development
+## 🛠️ Разработка
 
-### Backend Development
+### Разработка Backend
 ```bash
 cd src/backend
 npm install
 npm run start:dev
 ```
 
-### Frontend Development
+### Разработка Frontend
 ```bash
 cd src/frontend
 npm install
 npm start
 ```
 
-### Database Migrations
+### Миграции базы данных
 ```bash
 cd src/backend
 npm run typeorm:generate -- -n MigrationName
 npm run typeorm:migrate
 ```
 
-### Running Tests
+### Запуск тестов
 ```bash
-# Backend tests
+# Backend тесты
 cd src/backend
 npm run test
 npm run test:e2e
 
-# Frontend tests
+# Frontend тесты
 cd src/frontend
 npm test
 ```
 
-## 📁 Project Structure
+## 📁 Структура проекта
 
 ```
 crm-system/
-├── ansible/                 # Ansible playbooks for deployment
-├── docker/                  # Docker configurations
-│   ├── docker-compose.yml   # Development environment
-│   └── prometheus/          # Monitoring configuration
+├── ansible/                 # Ansible плейбуки для деплоя
+├── docker/                  # Docker конфигурации
+│   ├── docker-compose.yml   # Среда разработки
+│   └── prometheus/          # Конфигурация мониторинга
 ├── github/                  # GitHub Actions workflows
-├── monitoring/              # Monitoring and observability
-│   └── grafana/            # Grafana dashboards and provisioning
-├── scripts/                 # Utility scripts
-├── src/                     # Source code
+├── monitoring/              # Мониторинг и наблюдаемость
+│   └── grafana/            # Дашборды и настройка Grafana
+├── scripts/                 # Утилитарные скрипты
+├── src/                     # Исходный код
 │   ├── backend/            # NestJS backend
 │   │   ├── src/
-│   │   │   ├── modules/    # Feature modules
-│   │   │   ├── config/     # Configuration files
-│   │   │   └── main.ts     # Application entry point
+│   │   │   ├── modules/    # Функциональные модули
+│   │   │   ├── config/     # Конфигурационные файлы
+│   │   │   └── main.ts     # Точка входа приложения
 │   │   └── package.json
 │   └── frontend/           # React frontend
 └── README.md
 ```
 
-## 🔧 Configuration
+## 🔧 Конфигурация
 
-### Environment Variables
-Copy `.env.example` to `.env` and configure:
+### Переменные окружения
+Скопируйте `.env.example` в `.env` и настройте:
 
 ```bash
-# Database
+# База данных
 DB_HOST=localhost
 DB_PORT=5432
 DB_USER=postgres
@@ -191,121 +191,121 @@ DB_PASSWORD=postgres
 DB_NAME=crm_prod
 
 # JWT
-JWT_SECRET=your-secret-key
+JWT_SECRET=ваш-секретный-ключ
 JWT_EXPIRES_IN=24h
 
 # Redis
 REDIS_HOST=localhost
 REDIS_PORT=6379
 
-# Notifications
-TELEGRAM_BOT_TOKEN=your-bot-token
-SLACK_WEBHOOK_URL=your-webhook-url
+# Уведомления
+TELEGRAM_BOT_TOKEN=токен-вашего-бота
+SLACK_WEBHOOK_URL=url-вашего-webhook
 ```
 
-## 📊 API Documentation
+## 📊 Документация API
 
-The API is fully documented with Swagger/OpenAPI. Access the interactive documentation at:
-- **Development**: http://localhost:3001/docs
-- **Production**: https://your-domain.com/docs
+API полностью документирован с помощью Swagger/OpenAPI. Доступ к интерактивной документации:
+- **Разработка**: http://localhost:3001/docs
+- **Продакшн**: https://ваш-домен.com/docs
 
-### Key Endpoints
-- `POST /api/auth/login` - User authentication
-- `POST /api/auth/register` - User registration
-- `GET /api/users` - User management
-- `GET /api/companies` - Company management
-- `GET /api/projects` - Project management
-- `GET /api/leads` - Lead management
-- `GET /api/tasks` - Task management
-- `GET /api/dashboard` - Dashboard data
-- `GET /api/reports` - Report generation
+### Ключевые эндпоинты
+- `POST /api/auth/login` - Аутентификация пользователя
+- `POST /api/auth/register` - Регистрация пользователя
+- `GET /api/users` - Управление пользователями
+- `GET /api/companies` - Управление компаниями
+- `GET /api/projects` - Управление проектами
+- `GET /api/leads` - Управление лидами
+- `GET /api/tasks` - Управление задачами
+- `GET /api/dashboard` - Данные дашборда
+- `GET /api/reports` - Генерация отчетов
 
-## 🧪 Testing
+## 🧪 Тестирование
 
-### Backend Testing
-- **Unit Tests**: Jest with NestJS testing utilities
-- **E2E Tests**: Supertest for API testing
-- **Coverage**: Jest coverage reports
+### Backend тестирование
+- **Модульные тесты**: Jest с утилитами тестирования NestJS
+- **E2E тесты**: Supertest для тестирования API
+- **Покрытие**: Отчеты о покрытии Jest
 
-### Frontend Testing
-- **Unit Tests**: Jest + React Testing Library
-- **Component Tests**: Component isolation testing
-- **Integration Tests**: User workflow testing
+### Frontend тестирование
+- **Модульные тесты**: Jest + React Testing Library
+- **Тесты компонентов**: Изолированное тестирование компонентов
+- **Интеграционные тесты**: Тестирование пользовательских сценариев
 
-## 🚀 Deployment
+## 🚀 Деплой
 
-### Production Deployment
+### Деплой в продакшн
 ```bash
-# Build production images
+# Сборка продакшн образов
 docker-compose -f docker-compose.prod.yml build
 
-# Deploy to production
+# Деплой в продакшн
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
-### Ansible Deployment
+### Деплой через Ansible
 ```bash
-# Deploy to production servers
+# Деплой на продакшн серверы
 ansible-playbook -i inventory/production playbooks/deploy.yml
 ```
 
-## 📈 Monitoring & Observability
+## 📈 Мониторинг и наблюдаемость
 
-### Metrics Collection
-- **Application Metrics**: Custom business metrics
-- **System Metrics**: CPU, memory, disk usage
-- **Database Metrics**: Query performance, connections
-- **API Metrics**: Request rates, response times
+### Сбор метрик
+- **Метрики приложения**: Пользовательские бизнес-метрики
+- **Системные метрики**: CPU, память, использование диска
+- **Метрики базы данных**: Производительность запросов, соединения
+- **API метрики**: Частота запросов, время ответа
 
-### Dashboards
-- **Business Overview**: KPIs and business metrics
-- **System Health**: Infrastructure monitoring
-- **User Activity**: User engagement metrics
-- **Performance**: Application performance metrics
+### Дашборды
+- **Бизнес обзор**: KPI и бизнес-метрики
+- **Состояние системы**: Мониторинг инфраструктуры
+- **Активность пользователей**: Метрики вовлеченности пользователей
+- **Производительность**: Метрики производительности приложения
 
-### Alerts
-- **System Alerts**: Infrastructure issues
-- **Business Alerts**: KPI thresholds
-- **Security Alerts**: Authentication failures
-- **Performance Alerts**: Response time degradation
+### Оповещения
+- **Системные оповещения**: Проблемы инфраструктуры
+- **Бизнес оповещения**: Пороги KPI
+- **Оповещения безопасности**: Сбои аутентификации
+- **Оповещения производительности**: Деградация времени ответа
 
-## 🤝 Contributing
+## 🤝 Участие в разработке
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. Форкните репозиторий
+2. Создайте ветку для функции (`git checkout -b feature/amazing-feature`)
+3. Зафиксируйте изменения (`git commit -m 'Add amazing feature'`)
+4. Отправьте в ветку (`git push origin feature/amazing-feature`)
+5. Откройте Pull Request
 
-## 📝 License
+## 📝 Лицензия
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Этот проект лицензирован под MIT License - см. файл [LICENSE](LICENSE) для деталей.
 
-## 🆘 Support
+## 🆘 Поддержка
 
-For support and questions:
-- Create an issue in the GitHub repository
-- Contact the development team
-- Check the documentation and API docs
+Для поддержки и вопросов:
+- Создайте issue в GitHub репозитории
+- Свяжитесь с командой разработки
+- Проверьте документацию и API docs
 
-## 🔮 Roadmap
+## 🔮 Дорожная карта
 
-### Upcoming Features
-- [ ] Mobile application (React Native)
-- [ ] Advanced reporting with custom dashboards
-- [ ] Integration with accounting software
-- [ ] Document management system
-- [ ] Advanced workflow automation
-- [ ] Multi-language support
-- [ ] Advanced analytics and AI insights
+### Предстоящие функции
+- [ ] Мобильное приложение (React Native)
+- [ ] Расширенная отчетность с пользовательскими дашбордами
+- [ ] Интеграция с бухгалтерским ПО
+- [ ] Система управления документами
+- [ ] Расширенная автоматизация рабочих процессов
+- [ ] Многоязычная поддержка
+- [ ] Расширенная аналитика и AI-инсайты
 
-### Performance Improvements
-- [ ] GraphQL API implementation
-- [ ] Advanced caching strategies
-- [ ] Database query optimization
-- [ ] Microservices architecture
-- [ ] Event-driven architecture
+### Улучшения производительности
+- [ ] Реализация GraphQL API
+- [ ] Расширенные стратегии кеширования
+- [ ] Оптимизация запросов к базе данных
+- [ ] Микросервисная архитектура
+- [ ] Событийно-ориентированная архитектура
 
 ---
 
-**Built with ❤️ for construction companies worldwide**
+**Создано с ❤️ для строительных компаний по всему миру**

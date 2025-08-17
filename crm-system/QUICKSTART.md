@@ -1,54 +1,54 @@
-# 🚀 CRM System Quick Start Guide
+# 🚀 Руководство по быстрому запуску CRM-системы
 
-This guide will help you get the CRM system up and running quickly.
+Это руководство поможет вам быстро запустить CRM-систему.
 
-## 📋 Prerequisites
+## 📋 Предварительные требования
 
-- Docker and Docker Compose installed
-- Node.js 18+ (for local development)
+- Установленные Docker и Docker Compose
+- Node.js 18+ (для локальной разработки)
 - Git
 
-## 🏃‍♂️ Quick Start (Development)
+## 🏃‍♂️ Быстрый старт (Разработка)
 
-### 1. Clone and Setup
+### 1. Клонирование и настройка
 ```bash
-git clone <your-repo-url>
+git clone <url-вашего-репозитория>
 cd crm-system
 ```
 
-### 2. Run Development Setup
+### 2. Запуск настройки разработки
 ```bash
 ./scripts/dev-setup.sh
 ```
 
-This script will:
-- ✅ Create environment files
-- ✅ Install dependencies
-- ✅ Start all services
-- ✅ Set up monitoring
+Этот скрипт:
+- ✅ Создаст файлы окружения
+- ✅ Установит зависимости
+- ✅ Запустит все сервисы
+- ✅ Настроит мониторинг
 
-### 3. Access Your System
+### 3. Доступ к вашей системе
 - **CRM API**: http://localhost:3001
-- **Swagger Docs**: http://localhost:3001/docs
+- **Swagger документация**: http://localhost:3001/docs
 - **Grafana**: http://localhost:3000 (admin/admin)
 - **Prometheus**: http://localhost:9090
 
-## 🧪 Testing the System
+## 🧪 Тестирование системы
 
-### 1. Create a Test User
+### 1. Создание тестового пользователя
 ```bash
 curl -X POST http://localhost:3001/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "admin@example.com",
     "password": "password123",
-    "firstName": "Admin",
-    "lastName": "User",
+    "firstName": "Админ",
+    "lastName": "Пользователь",
     "role": "admin"
   }'
 ```
 
-### 2. Login
+### 2. Вход в систему
 ```bash
 curl -X POST http://localhost:3001/api/auth/login \
   -H "Content-Type: application/json" \
@@ -58,144 +58,144 @@ curl -X POST http://localhost:3001/api/auth/login \
   }'
 ```
 
-### 3. Test Protected Endpoints
+### 3. Тестирование защищенных эндпоинтов
 ```bash
-# Use the JWT token from login response
+# Используйте JWT токен из ответа на вход
 curl -X GET http://localhost:3001/api/users \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+  -H "Authorization: Bearer ВАШ_JWT_ТОКЕН"
 ```
 
-## 🐳 Docker Commands
+## 🐳 Docker команды
 
-### Development
+### Разработка
 ```bash
-# Start services
+# Запуск сервисов
 cd docker
 docker-compose up -d
 
-# View logs
+# Просмотр логов
 docker-compose logs -f
 
-# Stop services
+# Остановка сервисов
 docker-compose down
 ```
 
-### Production
+### Продакшн
 ```bash
-# Deploy to production
+# Деплой в продакшн
 ./scripts/deploy-prod.sh
 
-# View production logs
+# Просмотр продакшн логов
 docker-compose -f docker-compose.prod.yml logs -f
 
-# Backup system
+# Резервное копирование системы
 cd docker
 ./backup.sh
 ```
 
-## 🔧 Configuration
+## 🔧 Конфигурация
 
-### Environment Variables
-- Copy `.env.example` to `.env` for development
-- Copy `.env.prod.example` to `.env.prod` for production
-- Update values according to your environment
+### Переменные окружения
+- Скопируйте `.env.example` в `.env` для разработки
+- Скопируйте `.env.prod.example` в `.env.prod` для продакшна
+- Обновите значения в соответствии с вашей средой
 
-### Key Configuration Files
-- `docker/docker-compose.yml` - Development environment
-- `docker/docker-compose.prod.yml` - Production environment
-- `docker/nginx/nginx.conf` - Nginx configuration
-- `docker/prometheus/` - Monitoring configuration
+### Ключевые конфигурационные файлы
+- `docker/docker-compose.yml` - Среда разработки
+- `docker/docker-compose.prod.yml` - Среда продакшна
+- `docker/nginx/nginx.conf` - Конфигурация Nginx
+- `docker/prometheus/` - Конфигурация мониторинга
 
-## 📊 Monitoring
+## 📊 Мониторинг
 
-### Metrics Available
-- **Application**: Request rates, response times, error rates
-- **Database**: Connection counts, query performance
-- **System**: CPU, memory, disk usage
-- **Business**: User activity, lead conversion, project progress
+### Доступные метрики
+- **Приложение**: Частота запросов, время ответа, частота ошибок
+- **База данных**: Количество соединений, производительность запросов
+- **Система**: CPU, память, использование диска
+- **Бизнес**: Активность пользователей, конверсия лидов, прогресс проектов
 
-### Dashboards
-- **Business Overview**: KPIs and business metrics
-- **System Health**: Infrastructure monitoring
-- **Performance**: Application performance metrics
+### Дашборды
+- **Бизнес обзор**: KPI и бизнес-метрики
+- **Состояние системы**: Мониторинг инфраструктуры
+- **Производительность**: Метрики производительности приложения
 
-## 🚨 Troubleshooting
+## 🚨 Устранение неполадок
 
-### Common Issues
+### Частые проблемы
 
-#### 1. Port Already in Use
+#### 1. Порт уже используется
 ```bash
-# Check what's using the port
+# Проверьте, что использует порт
 lsof -i :3001
 
-# Kill the process
+# Убейте процесс
 kill -9 <PID>
 ```
 
-#### 2. Database Connection Issues
+#### 2. Проблемы с подключением к базе данных
 ```bash
-# Check PostgreSQL status
+# Проверьте статус PostgreSQL
 docker exec crm_postgres pg_isready -U postgres
 
-# Check logs
+# Проверьте логи
 docker-compose logs postgres
 ```
 
-#### 3. Redis Connection Issues
+#### 3. Проблемы с подключением к Redis
 ```bash
-# Check Redis status
+# Проверьте статус Redis
 docker exec crm_redis redis-cli ping
 
-# Check logs
+# Проверьте логи
 docker-compose logs redis
 ```
 
-#### 4. Backend Issues
+#### 4. Проблемы с backend
 ```bash
-# Check backend logs
+# Проверьте логи backend
 docker-compose logs crm_backend
 
-# Restart backend
+# Перезапустите backend
 docker-compose restart crm_backend
 ```
 
-### Health Checks
+### Проверки состояния
 ```bash
-# Check all services
+# Проверьте все сервисы
 docker-compose ps
 
-# Check service health
+# Проверьте состояние сервисов
 curl http://localhost:3001/health
 ```
 
-## 🔒 Security
+## 🔒 Безопасность
 
-### Development
-- Default passwords in `.env.example`
-- No SSL (HTTP only)
-- Open access to monitoring
+### Разработка
+- Пароли по умолчанию в `.env.example`
+- Без SSL (только HTTP)
+- Открытый доступ к мониторингу
 
-### Production
-- Strong passwords required
-- SSL/TLS encryption
-- Restricted monitoring access
-- Rate limiting enabled
-- Security headers configured
+### Продакшн
+- Требуются надежные пароли
+- SSL/TLS шифрование
+- Ограниченный доступ к мониторингу
+- Включено ограничение скорости
+- Настроены заголовки безопасности
 
-## 📈 Scaling
+## 📈 Масштабирование
 
-### Horizontal Scaling
+### Горизонтальное масштабирование
 ```bash
-# Scale backend services
+# Масштабирование backend сервисов
 docker-compose up -d --scale crm_backend=3
 
-# Scale with load balancer
-# Update nginx.conf for multiple backend instances
+# Масштабирование с балансировщиком нагрузки
+# Обновите nginx.conf для нескольких backend инстансов
 ```
 
-### Vertical Scaling
+### Вертикальное масштабирование
 ```bash
-# Update resource limits in docker-compose.prod.yml
+# Обновите лимиты ресурсов в docker-compose.prod.yml
 deploy:
   resources:
     limits:
@@ -203,21 +203,21 @@ deploy:
       cpus: '1.0'
 ```
 
-## 🚀 Next Steps
+## 🚀 Следующие шаги
 
-1. **Customize**: Update branding and business logic
-2. **Integrate**: Connect with external systems
-3. **Deploy**: Set up production environment
-4. **Monitor**: Configure alerts and dashboards
-5. **Backup**: Set up automated backup schedules
+1. **Настройка**: Обновите брендинг и бизнес-логику
+2. **Интеграция**: Подключите внешние системы
+3. **Деплой**: Настройте продакшн среду
+4. **Мониторинг**: Настройте оповещения и дашборды
+5. **Резервное копирование**: Настройте автоматические расписания резервного копирования
 
-## 📞 Support
+## 📞 Поддержка
 
-- Check the main README.md for detailed documentation
-- Review API documentation at `/docs` endpoint
-- Check logs for error details
-- Create issues in the repository
+- Проверьте основной README.md для детальной документации
+- Просмотрите документацию API по эндпоинту `/docs`
+- Проверьте логи для деталей ошибок
+- Создайте issues в репозитории
 
 ---
 
-**Happy CRM-ing! 🎉**
+**Удачного использования CRM! 🎉**
