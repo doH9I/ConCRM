@@ -1,0 +1,295 @@
+---
+- name: Deploy CRM to Timeweb Cloud
+  hosts: all
+  become: true
+  gather_facts: yes
+  
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install base packages
+      apt:
+        name:
+          - curl
+          - gnupg
+          - software-properties-common
+          - apt-transport-https
+          - ca-certificates
+          - unzip
+          - htop
+          - vim
+          - ufw
+        state: present
+
+    - name: Configure firewall
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop:
+        - 22    # SSH
+        - 80    # HTTP
+        - 443   # HTTPS
+        - 3000  # Grafana
+        - 9090  # Prometheus
+        - 9100  # Node Exporter
+
+    - name: Enable firewall
+      ufw:
+        state: enabled
+        policy: deny
+
+- name: Install Docker on all servers
+  hosts: all
+  become: true
+  
+  tasks:
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Install Docker packages
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+        state: present
+
+    - name: Start and enable Docker
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add ubuntu user to docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+
+    - name: Install Docker Compose
+      get_url:
+        url: https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-linux-x86_64
+        dest: /usr/local/bin/docker-compose
+        mode: '0755'
+
+- name: Configure Database Server
+  hosts: db
+  become: true
+  
+  tasks:
+    - name: Create CRM directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+      loop:
+        - /opt/crm
+        - /opt/crm/data
+        - /opt/crm/backups
+        - /opt/crm/logs
+
+    - name: Copy database configuration
+      copy:
+        src: "{{ playbook_dir }}/../docker/docker-compose.db.yml"
+        dest: /opt/crm/docker-compose.yml
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Copy environment file
+      copy:
+        src: "{{ playbook_dir }}/../.env"
+        dest: /opt/crm/.env
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Start database services
+      docker_compose:
+        project_src: /opt/crm
+        state: present
+        build: yes
+
+    - name: Wait for PostgreSQL to be ready
+      wait_for:
+        host: localhost
+        port: 5432
+        delay: 10
+        timeout: 300
+
+    - name: Initialize database
+      shell: |
+        docker exec postgres psql -U postgres -c "CREATE DATABASE crm_prod;"
+        docker exec postgres psql -U postgres -c "CREATE USER crm_user WITH PASSWORD '{{ db_password }}';"
+        docker exec postgres psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE crm_prod TO crm_user;"
+      become_user: ubuntu
+      ignore_errors: yes
+
+- name: Configure Monitoring Server
+  hosts: monitoring
+  become: true
+  
+  tasks:
+    - name: Create monitoring directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+      loop:
+        - /opt/monitoring
+        - /opt/monitoring/prometheus
+        - /opt/monitoring/grafana
+        - /opt/monitoring/grafana/provisioning
+        - /opt/monitoring/grafana/dashboards
+
+    - name: Copy monitoring configuration
+      copy:
+        src: "{{ playbook_dir }}/../monitoring/"
+        dest: /opt/monitoring/
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Copy monitoring docker-compose
+      copy:
+        src: "{{ playbook_dir }}/../docker/docker-compose.monitoring.yml"
+        dest: /opt/monitoring/docker-compose.yml
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Start monitoring services
+      docker_compose:
+        project_src: /opt/monitoring
+        state: present
+        build: yes
+
+- name: Configure Application Server
+  hosts: app
+  become: true
+  
+  tasks:
+    - name: Create CRM directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+      loop:
+        - /opt/crm
+        - /opt/crm/src
+        - /opt/crm/logs
+        - /opt/crm/uploads
+
+    - name: Copy CRM source code
+      copy:
+        src: "{{ playbook_dir }}/../src/"
+        dest: /opt/crm/src/
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Copy Docker configuration
+      copy:
+        src: "{{ playbook_dir }}/../docker/"
+        dest: /opt/crm/docker/
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Copy environment file
+      copy:
+        src: "{{ playbook_dir }}/../.env"
+        dest: /opt/crm/.env
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Build and start CRM services
+      docker_compose:
+        project_src: /opt/crm
+        files: docker/docker-compose.prod.yml
+        state: present
+        build: yes
+
+    - name: Wait for backend to be ready
+      wait_for:
+        host: localhost
+        port: 3001
+        delay: 10
+        timeout: 300
+
+    - name: Run database migrations
+      shell: docker exec crm-backend npm run typeorm:migrate
+      become_user: ubuntu
+      ignore_errors: yes
+
+- name: Final configuration
+  hosts: all
+  become: true
+  
+  tasks:
+    - name: Create systemd service for CRM
+      template:
+        src: "{{ playbook_dir }}/../ansible/templates/crm.service.j2"
+        dest: /etc/systemd/system/crm.service
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Enable CRM service
+      systemd:
+        name: crm
+        enabled: yes
+        daemon_reload: yes
+
+    - name: Create backup cron job
+      cron:
+        name: "CRM Database Backup"
+        minute: "0"
+        hour: "2"
+        job: "docker exec postgres pg_dump -U postgres crm_prod > /opt/crm/backups/backup_$(date +%Y%m%d_%H%M%S).sql"
+        user: ubuntu
+
+    - name: Create log rotation
+      template:
+        src: "{{ playbook_dir }}/../ansible/templates/logrotate.j2"
+        dest: /etc/logrotate.d/crm
+        owner: root
+        group: root
+        mode: '0644'
+
+- name: Health check
+  hosts: app
+  become: false
+  
+  tasks:
+    - name: Check CRM availability
+      uri:
+        url: http://localhost:3000/health
+        method: GET
+      register: health_check
+      retries: 5
+      delay: 10
+      until: health_check.status == 200
+
+    - name: Display health check result
+      debug:
+        msg: "CRM is running successfully on {{ inventory_hostname }}"

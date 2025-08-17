@@ -1,0 +1,83 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: production
+    application: crm-system
+
+rule_files:
+  # - "alert_rules.yml"
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 30s
+
+  # CRM Backend
+  - job_name: 'crm-backend'
+    static_configs:
+      - targets: ['crm_backend:3001']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    honor_labels: true
+    metrics_path: /metrics
+
+  # PostgreSQL (if using postgres_exporter)
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+    scrape_interval: 60s
+    scrape_timeout: 30s
+
+  # Redis (if using redis_exporter)
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 60s
+    scrape_timeout: 30s
+
+  # Nginx (if using nginx_exporter)
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx:80']
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+# Alerting configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# Rule files
+rule_files:
+  # - "alert_rules.yml"
+
+# Storage configuration
+storage:
+  tsdb:
+    retention.time: 30d
+    retention.size: 10GB
+    path: /prometheus
+    wal:
+      retention.period: 2h
+
+# Remote write configuration (for long-term storage)
+remote_write:
+  # - url: "https://your-remote-write-endpoint"
+  #   remote_write_relabel_configs:
+  #     - source_labels: [__name__]
+  #       regex: '.*'
+  #       action: keep
+
+# Remote read configuration
+remote_read:
+  # - url: "https://your-remote-read-endpoint"
+  #   remote_read_relabel_configs:
+  #     - source_labels: [__name__]
+  #       regex: '.*'
+  #       action: keep

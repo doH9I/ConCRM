@@ -1,0 +1,108 @@
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'alerts@yourcompany.com'
+  smtp_auth_username: 'your_email@gmail.com'
+  smtp_auth_password: 'your_app_password'
+
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: 'telegram-notifications'
+  routes:
+    - match:
+        severity: critical
+      receiver: 'telegram-critical'
+      repeat_interval: 1h
+    - match:
+        severity: warning
+      receiver: 'telegram-warning'
+      repeat_interval: 2h
+
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'dev', 'instance']
+
+receivers:
+  - name: 'telegram-notifications'
+    telegram_configs:
+      - bot_token: 'YOUR_TELEGRAM_BOT_TOKEN'
+        chat_id: 'YOUR_TELEGRAM_CHAT_ID'
+        parse_mode: 'HTML'
+        message: |
+          🚨 <b>CRM Alert</b>
+          
+          <b>Alert:</b> {{ .GroupLabels.alertname }}
+          <b>Severity:</b> {{ .CommonLabels.severity }}
+          <b>Instance:</b> {{ .CommonLabels.instance }}
+          <b>Summary:</b> {{ .CommonAnnotations.summary }}
+          
+          <b>Description:</b>
+          {{ .CommonAnnotations.description }}
+          
+          <b>Started:</b> {{ .StartsAt | since }}
+          
+          <a href="http://your-monitoring-server:3000">View in Grafana</a>
+
+  - name: 'telegram-critical'
+    telegram_configs:
+      - bot_token: 'YOUR_TELEGRAM_BOT_TOKEN'
+        chat_id: 'YOUR_TELEGRAM_CHAT_ID'
+        parse_mode: 'HTML'
+        message: |
+          🚨🚨🚨 <b>CRITICAL ALERT</b> 🚨🚨🚨
+          
+          <b>Alert:</b> {{ .GroupLabels.alertname }}
+          <b>Instance:</b> {{ .CommonLabels.instance }}
+          <b>Summary:</b> {{ .CommonAnnotations.summary }}
+          
+          <b>Description:</b>
+          {{ .CommonAnnotations.description }}
+          
+          <b>Started:</b> {{ .StartsAt | since }}
+          
+          <b>IMMEDIATE ACTION REQUIRED!</b>
+          
+          <a href="http://your-monitoring-server:3000">View in Grafana</a>
+
+  - name: 'telegram-warning'
+    telegram_configs:
+      - bot_token: 'YOUR_TELEGRAM_BOT_TOKEN'
+        chat_id: 'YOUR_TEGRAM_CHAT_ID'
+        parse_mode: 'HTML'
+        message: |
+          ⚠️ <b>Warning Alert</b>
+          
+          <b>Alert:</b> {{ .GroupLabels.alertname }}
+          <b>Instance:</b> {{ .CommonLabels.instance }}
+          <b>Summary:</b> {{ .CommonAnnotations.summary }}
+          
+          <b>Description:</b>
+          {{ .CommonAnnotations.description }}
+          
+          <b>Started:</b> {{ .StartsAt | since }}
+          
+          <a href="http://your-monitoring-server:3000">View in Grafana</a>
+
+  - name: 'email-notifications'
+    email_configs:
+      - to: 'devops@yourcompany.com'
+        send_resolved: true
+        headers:
+          subject: 'CRM Alert: {{ .GroupLabels.alertname }}'
+        html: |
+          <h2>CRM Alert</h2>
+          <p><strong>Alert:</strong> {{ .GroupLabels.alertname }}</p>
+          <p><strong>Severity:</strong> {{ .CommonLabels.severity }}</p>
+          <p><strong>Instance:</strong> {{ .CommonLabels.instance }}</p>
+          <p><strong>Summary:</strong> {{ .CommonAnnotations.summary }}</p>
+          <p><strong>Description:</strong> {{ .CommonAnnotations.description }}</p>
+          <p><strong>Started:</strong> {{ .StartsAt | since }}</p>
+
+templates:
+  - '/etc/alertmanager/template/*.tmpl'
